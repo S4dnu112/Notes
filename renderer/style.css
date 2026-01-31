@@ -1,0 +1,793 @@
+/* ============================================
+   Windows 11 Notepad Style - CSS Variables & Reset
+   ============================================ */
+:root {
+    /* Windows 11 light theme colors */
+    --bg-window: #f3f3f3;
+    --bg-content: #ffffff;
+    --bg-titlebar: #f9f9f9;
+    --bg-tab-active: #ffffff;
+    --bg-tab-hover: #e9e9e9;
+    --bg-menu: #ffffff;
+    --bg-status: #f3f3f3;
+
+    --text-primary: #1a1a1a;
+    --text-secondary: #5c5c5c;
+    --text-muted: #767676;
+
+    --accent: #0078d4;
+    --accent-hover: #106ebe;
+
+    --border-color: #e0e0e0;
+    --border-subtle: #ebebeb;
+
+    --close-hover: #c42b1c;
+    --close-hover-text: #ffffff;
+
+    /* Spacing */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 12px;
+    --spacing-lg: 16px;
+
+    /* Typography */
+    --font-ui: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+    --font-editor: 'Consolas', 'Cascadia Code', monospace;
+
+    /* Effects */
+    --transition-fast: 100ms ease;
+    --shadow-menu: 0 4px 16px rgba(0, 0, 0, 0.14);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    height: 100%;
+    font-family: var(--font-ui);
+    background: var(--bg-window);
+    color: var(--text-primary);
+    overflow: hidden;
+    font-size: 14px;
+}
+
+/* ============================================
+   App Layout
+   ============================================ */
+#app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: var(--bg-window);
+}
+
+/* ============================================
+   Custom Title Bar
+   ============================================ */
+#title-bar {
+    display: flex;
+    align-items: center;
+    background: var(--bg-titlebar);
+    height: 32px;
+    padding: 0 4px;
+    gap: 2px;
+    -webkit-app-region: drag;
+    user-select: none;
+}
+
+#title-bar>* {
+    -webkit-app-region: no-drag;
+}
+
+#title-bar-drag {
+    flex: 1;
+    height: 100%;
+    min-width: 20px;
+    -webkit-app-region: drag;
+}
+
+/* Title bar buttons base style */
+.titlebar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+}
+
+/* Menu hamburger button */
+.menu-btn {
+    width: 28px;
+    height: 22px;
+    margin-right: 4px;
+}
+
+.menu-btn:hover {
+    background: var(--bg-tab-hover);
+}
+
+/* Add tab button */
+#btn-add-tab {
+    width: 18px;
+    height: 18px;
+    font-size: 14px;
+    color: var(--text-muted);
+    margin: 0 4px;
+}
+
+#btn-add-tab:hover {
+    background: var(--bg-tab-hover);
+    color: var(--text-primary);
+}
+
+/* Window control buttons */
+#window-controls {
+    display: flex;
+    height: 100%;
+}
+
+.window-btn {
+    width: 32px;
+    height: 100%;
+    border-radius: 0;
+}
+
+.window-btn:hover {
+    background: var(--bg-tab-hover);
+}
+
+.window-btn.close-btn:hover {
+    background: var(--close-hover);
+    color: var(--close-hover-text);
+}
+
+/* ============================================
+   Tabs Container (in separate row)
+   ============================================ */
+#tabs-row {
+    display: flex;
+    align-items: center;
+    background: var(--bg-titlebar);
+    height: 40px;
+    padding: 4px 8px 0;
+    gap: 4px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+/* ============================================
+   Tabs Container
+   ============================================ */
+#tabs-container {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 0;
+    height: 100%;
+    align-items: flex-end;
+}
+
+#tabs-container::-webkit-scrollbar {
+    display: none;
+}
+
+.tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: transparent;
+    border: none;
+    border-radius: 5px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    cursor: default;
+    transition: all var(--transition-fast);
+    max-width: 200px;
+    min-width: 120px;
+    position: relative;
+    font-family: var(--font-ui);
+    height: 100%;
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    margin-bottom: -1px;
+    /* Overlap border */
+    border: 1px solid transparent;
+}
+
+.tab:hover {
+    background: var(--bg-tab-hover);
+    color: var(--text-primary);
+}
+
+.tab.active {
+    background: var(--bg-content);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+    border-bottom-color: var(--bg-content);
+    z-index: 10;
+}
+
+.tab-icon {
+    width: 12px;
+    height: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+}
+
+.tab-title {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    min-width: 0;
+}
+
+.tab-filename {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tab-extension {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* Modified indicator */
+/* Modified indicator removed from pseudo-element */
+
+.tab-unsaved-indicator {
+    display: none;
+    color: var(--text-muted);
+    font-size: 8px;
+    margin-left: 6px;
+    flex-shrink: 0;
+}
+
+.tab-close {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    font-size: 12px;
+    color: var(--text-muted);
+    transition: all var(--transition-fast);
+    opacity: 0;
+}
+
+.tab:hover .tab-close,
+.tab.active .tab-close {
+    opacity: 1;
+}
+
+.tab-close:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: var(--text-primary);
+}
+
+/* ============================================
+   Dropdown Menu
+   ============================================ */
+#dropdown-menu {
+    position: absolute;
+    top: 32px;
+    left: 4px;
+    background: var(--bg-menu);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow-menu);
+    min-width: 200px;
+    padding: 4px;
+    z-index: 1000;
+    animation: menuFadeIn 100ms ease;
+}
+
+#dropdown-menu.hidden {
+    display: none;
+}
+
+@keyframes menuFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.menu-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.menu-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: var(--font-ui);
+    font-size: 13px;
+    color: var(--text-primary);
+    text-align: left;
+    transition: background var(--transition-fast);
+}
+
+.menu-option:hover {
+    background: var(--bg-tab-hover);
+}
+
+.menu-label {
+    flex: 1;
+}
+
+.menu-shortcut {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-left: 24px;
+}
+
+.menu-divider {
+    height: 1px;
+    background: var(--border-subtle);
+    margin: 4px 8px;
+}
+
+/* Menu Info Section */
+.menu-info-section {
+    padding: 8px 12px;
+}
+
+.menu-info-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.menu-info-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 12px;
+}
+
+.info-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.menu-info-item span:last-child {
+    color: var(--text-primary);
+}
+
+/* ============================================
+   Settings Panel Overlay
+   ============================================ */
+#settings-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    animation: overlayFadeIn 150ms ease;
+}
+
+#settings-overlay.hidden {
+    display: none;
+}
+
+@keyframes overlayFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+#settings-panel {
+    background: var(--bg-menu);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.24);
+    min-width: 360px;
+    max-width: 90%;
+    animation: panelSlideIn 150ms ease;
+}
+
+@keyframes panelSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.settings-header h2 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.settings-close-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    font-size: 20px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.settings-close-btn:hover {
+    background: var(--bg-tab-hover);
+    color: var(--text-primary);
+}
+
+.settings-content {
+    padding: 12px 20px 20px;
+}
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    min-height: 44px;
+}
+
+.settings-label {
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.settings-divider {
+    height: 1px;
+    background: var(--border-subtle);
+    margin: 4px 0;
+}
+
+/* Settings Select Dropdown */
+.settings-select {
+    padding: 6px 32px 6px 12px;
+    font-size: 13px;
+    font-family: var(--font-ui);
+    color: var(--text-primary);
+    background: var(--bg-window);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23767676' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    min-width: 140px;
+}
+
+.settings-select:hover {
+    border-color: var(--accent);
+}
+
+.settings-select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
+}
+
+/* Toggle Switch */
+.toggle-switch {
+    position: relative;
+    width: 44px;
+    height: 24px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #c4c4c4;
+    border-radius: 24px;
+    transition: all 200ms ease;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: all 200ms ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch input:checked+.toggle-slider {
+    background: var(--accent);
+}
+
+.toggle-switch input:checked+.toggle-slider::before {
+    transform: translateX(20px);
+}
+
+/* Number Input with +/- buttons */
+.number-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.number-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    min-width: 24px;
+    text-align: center;
+}
+
+.number-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-window);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    font-size: 16px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.number-btn:hover {
+    background: var(--bg-tab-hover);
+    border-color: var(--accent);
+}
+
+.number-btn:active {
+    transform: scale(0.95);
+}
+
+/* ============================================
+   Editor Container
+   ============================================ */
+#editor-container {
+    flex: 1;
+    overflow: auto;
+    background: var(--bg-content);
+}
+
+#editor {
+    min-height: 100%;
+    padding: var(--spacing-lg) var(--spacing-lg);
+    font-family: var(--font-editor);
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    outline: none;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+#editor:empty::before {
+    content: attr(data-placeholder);
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+#editor ::selection {
+    background: var(--accent);
+    color: white;
+}
+
+/* Editor Images */
+#editor img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    margin: var(--spacing-sm) 0;
+    display: block;
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+}
+
+#editor img:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+#editor img.loading {
+    opacity: 0.5;
+}
+
+#editor img.selected {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* Image Resize Handle */
+.image-resize-container {
+    position: relative;
+    display: inline-block;
+}
+
+.resize-handle {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    width: 12px;
+    height: 12px;
+    background: var(--accent);
+    border: 2px solid white;
+    border-radius: 2px;
+    cursor: nwse-resize;
+    z-index: 10;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.resize-handle:hover {
+    background: var(--accent-hover);
+    transform: scale(1.1);
+}
+
+/* ============================================
+   Status Bar
+   ============================================ */
+#status-bar {
+    display: flex;
+    align-items: center;
+    background: var(--bg-status);
+    padding: 0 var(--spacing-sm);
+    height: 24px;
+    border-top: 1px solid var(--border-subtle);
+    font-size: 11px;
+    color: var(--text-secondary);
+    gap: var(--spacing-sm);
+    overflow: hidden;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    padding: 2px 6px;
+    border-radius: 2px;
+    cursor: default;
+    white-space: nowrap;
+    flex-shrink: 1;
+    min-width: 0;
+}
+
+.status-item:hover {
+    background: var(--bg-tab-hover);
+}
+
+.status-item.highlight {
+    background: rgba(0, 120, 212, 0.1);
+    border: 1px solid rgba(0, 120, 212, 0.3);
+}
+
+.status-spacer {
+    flex: 1;
+}
+
+/* ============================================
+   Scrollbar Styling
+   ============================================ */
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c4c4c4;
+    border-radius: 6px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+}
+
+/* ============================================
+   Utility Classes
+   ============================================ */
+.hidden {
+    display: none !important;
+}
+
+/* ============================================
+   Tab Drag and Drop
+   ============================================ */
+.tab.dragging {
+    opacity: 0.5;
+}
+
+.tab.drag-over-left::before,
+.tab.drag-over-right::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    width: 2px;
+    background: var(--accent);
+    border-radius: 1px;
+}
+
+.tab.drag-over-left::before {
+    left: -2px;
+}
+
+.tab.drag-over-right::after {
+    right: -2px;
+}
+
+/* ============================================
+   Word Wrap Toggle
+   ============================================ */
+#editor.no-wrap {
+    white-space: pre;
+    overflow-x: auto;
+}

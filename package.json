@@ -1,0 +1,23 @@
+{
+  "name": "teximg-editor",
+  "version": "1.0.0",
+  "description": "High-performance text editor for .txti files (zip containers with text and images)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [
+    "electron",
+    "text-editor",
+    "txti"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.10",
+    "uuid": "^9.0.0"
+  }
+}

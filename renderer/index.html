@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' file: data:; style-src 'self' 'unsafe-inline'; script-src 'self'">
+    <title>TexImg Editor</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="app">
+        <!-- Custom Title Bar -->
+        <div id="title-bar">
+            <!-- Hamburger Menu -->
+            <button id="menu-hamburger" class="titlebar-btn menu-btn" title="Menu">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <rect x="2" y="3" width="12" height="1.5" rx="0.5" />
+                    <rect x="2" y="7.25" width="12" height="1.5" rx="0.5" />
+                    <rect x="2" y="11.5" width="12" height="1.5" rx="0.5" />
+                </svg>
+            </button>
+
+            <div id="header-path" style="margin-left: 8px; font-size: 11px; color: #767676; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+
+            <!-- Draggable spacer -->
+            <div id="title-bar-drag"></div>
+
+            <!-- Window Controls -->
+            <div id="window-controls">
+                <button id="btn-minimize" class="titlebar-btn window-btn" title="Minimize">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                        <rect x="1" y="5.5" width="10" height="1" />
+                    </svg>
+                </button>
+                <button id="btn-maximize" class="titlebar-btn window-btn" title="Maximize">
+                    <!-- Normal state icon (single rectangle) -->
+                    <svg id="icon-maximize" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor"
+                        stroke-width="1">
+                        <rect x="1.5" y="1.5" width="9" height="9" rx="1" />
+                    </svg>
+                    <!-- Maximized state icon (overlapping rectangles) - hidden by default -->
+                    <svg id="icon-restore" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor"
+                        stroke-width="1" class="hidden">
+                        <rect x="3" y="0.5" width="8" height="8" rx="1" />
+                        <rect x="0.5" y="3" width="8" height="8" rx="1" fill="var(--bg-titlebar)" />
+                    </svg>
+                </button>
+                <button id="btn-close" class="titlebar-btn window-btn close-btn" title="Close">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                        <path d="M1.5 1.5L10.5 10.5M10.5 1.5L1.5 10.5" stroke="currentColor" stroke-width="1.2"
+                            stroke-linecap="round" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Separate Tab Bar -->
+        <div id="tabs-row">
+            <div id="tabs-container"></div>
+            <button id="btn-add-tab" class="titlebar-btn" title="New Tab">+</button>
+        </div>
+
+        <!-- Dropdown Menu (hidden by default) -->
+        <div id="dropdown-menu" class="hidden">
+            <div class="menu-section">
+                <button class="menu-option" id="opt-new">
+                    <span class="menu-label">New</span>
+                    <span class="menu-shortcut">Ctrl+N</span>
+                </button>
+                <button class="menu-option" id="opt-open">
+                    <span class="menu-label">Open</span>
+                    <span class="menu-shortcut">Ctrl+O</span>
+                </button>
+                <button class="menu-option" id="opt-save">
+                    <span class="menu-label">Save</span>
+                    <span class="menu-shortcut">Ctrl+S</span>
+                </button>
+                <button class="menu-option" id="opt-save-as">
+                    <span class="menu-label">Save As</span>
+                    <span class="menu-shortcut">Ctrl+Shift+S</span>
+                </button>
+                <div class="menu-divider"></div>
+                <button class="menu-option" id="opt-undo">
+                    <span class="menu-label">Undo</span>
+                    <span class="menu-shortcut">Ctrl+Z</span>
+                </button>
+                <button class="menu-option" id="opt-redo">
+                    <span class="menu-label">Redo</span>
+                    <span class="menu-shortcut">Ctrl+Y</span>
+                </button>
+                <div class="menu-divider"></div>
+                <button class="menu-option" id="opt-close-tab">
+                    <span class="menu-label">Close Tab</span>
+                    <span class="menu-shortcut">Ctrl+W</span>
+                </button>
+                <div class="menu-divider"></div>
+                <button class="menu-option" id="opt-settings">
+                    <span class="menu-label">Settings</span>
+                    <span class="menu-shortcut"></span>
+                </button>
+                <div class="menu-divider"></div>
+                <div class="menu-info-section">
+                    <div class="menu-info-title">Info</div>
+                    <div class="menu-info-item">
+                        <span class="info-label">Position:</span>
+                        <span id="status-position">Ln 1, Col 1</span>
+                    </div>
+                    <div class="menu-info-item">
+                        <span class="info-label">Characters:</span>
+                        <span id="status-chars">0 characters</span>
+                    </div>
+                    <div class="menu-info-item">
+                        <span class="info-label">Zoom:</span>
+                        <span id="status-zoom">100%</span>
+                    </div>
+                    <div class="menu-info-item">
+                        <span class="info-label">Line Ending:</span>
+                        <span id="status-lineending">Unix (LF)</span>
+                    </div>
+                    <div class="menu-info-item">
+                        <span class="info-label">Encoding:</span>
+                        <span id="status-encoding">UTF-8</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Panel Overlay -->
+        <div id="settings-overlay" class="hidden">
+            <div id="settings-panel">
+                <div class="settings-header">
+                    <h2>Settings</h2>
+                    <button id="settings-close" class="settings-close-btn">×</button>
+                </div>
+
+                <div class="settings-content">
+                    <!-- Line Feed -->
+                    <div class="settings-row">
+                        <span class="settings-label">Line Feed</span>
+                        <select id="setting-linefeed" class="settings-select">
+                            <option value="LF">Unix/Linux (LF)</option>
+                            <option value="CRLF">Windows (CR+LF)</option>
+                            <option value="CR">Mac OS Classic (CR)</option>
+                        </select>
+                    </div>
+
+                    <div class="settings-divider"></div>
+
+                    <!-- Word Wrap -->
+                    <div class="settings-row">
+                        <span class="settings-label">Word Wrap</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="setting-wordwrap">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="settings-divider"></div>
+
+                    <!-- Auto Indentation -->
+                    <div class="settings-row">
+                        <span class="settings-label">Auto Indentation</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="setting-autoindent">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Indent Character -->
+                    <div class="settings-row">
+                        <span class="settings-label">Character</span>
+                        <select id="setting-indentchar" class="settings-select">
+                            <option value="tab">Tab</option>
+                            <option value="space">Space</option>
+                        </select>
+                    </div>
+
+                    <!-- Spaces Per Tab -->
+                    <div class="settings-row">
+                        <span class="settings-label">Spaces Per Tab</span>
+                        <div class="number-input">
+                            <span id="tabsize-value" class="number-value">8</span>
+                            <button class="number-btn" id="tabsize-dec">−</button>
+                            <button class="number-btn" id="tabsize-inc">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Spaces Per Indent -->
+                    <div class="settings-row">
+                        <span class="settings-label">Spaces Per Indent</span>
+                        <div class="number-input">
+                            <span id="indentsize-value" class="number-value">8</span>
+                            <button class="number-btn" id="indentsize-dec">−</button>
+                            <button class="number-btn" id="indentsize-inc">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Editor Area -->
+        <div id="editor-container">
+            <div id="editor" contenteditable="true" spellcheck="true" data-placeholder=""></div>
+        </div>
+
+
+    </div>
+
+    <script type="module" src="renderer.js"></script>
+</body>
+
+</html>
