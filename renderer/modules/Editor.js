@@ -382,6 +382,9 @@ function updateCurrentTabTitle() {
     const tabState = state.tabs.get(state.activeTabId);
     if (!tabState) return;
 
+    // Only update title for unsaved files (no filePath)
+    if (tabState.filePath) return;
+
     const text = editor.innerText;
     const newTitle = getDisplayTitle(text);
 

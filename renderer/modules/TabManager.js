@@ -111,17 +111,20 @@ export async function switchToTab(tabId) {
         scrollTabIntoView(tabId);
     }
 
+    // Render content to editor BEFORE loading images
+    // This ensures content shows immediately
+    renderContentToEditor(tabState);
+
     // Load images if not already loaded (lazy loading)
     if (tabState.filePath && !tabState.imagesLoaded) {
         const result = await window.teximg.loadImages(tabState.filePath, tabId);
         if (result.success) {
             tabState.imageMap = result.imageMap;
             tabState.imagesLoaded = true;
+            // Re-render to show loaded images
+            renderContentToEditor(tabState);
         }
     }
-
-    // Render content to editor
-    renderContentToEditor(tabState);
 
     // Update status bar
     updateStatusBar();
@@ -310,6 +313,7 @@ export async function openFile(filePath = null) {
     state.tabOrder.push(tabId);
     renderTab(tabState);
     switchToTab(tabId);
+    updateTabsVisibility();
 
     saveSessionState();
 }
