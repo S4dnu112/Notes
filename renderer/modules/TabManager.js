@@ -322,7 +322,13 @@ export async function saveFile() {
 
     let filePath = tabState.filePath;
     if (!filePath) {
-        filePath = await window.teximg.saveDialog();
+        // Use tab title as default filename, or 'Untitled' if untitled
+        let defaultName = tabState.title !== 'Untitled' ? tabState.title : 'Untitled.txti';
+        // Add .txti extension if not already present
+        if (defaultName !== 'Untitled.txti' && !defaultName.endsWith('.txti')) {
+            defaultName += '.txti';
+        }
+        filePath = await window.teximg.saveDialog(defaultName);
         if (!filePath) return;
     }
 
@@ -356,8 +362,16 @@ export async function saveFileAs() {
     const tabState = state.tabs.get(state.activeTabId);
     if (!tabState) return;
 
-    // Always show save dialog, use current path as default
-    const filePath = await window.teximg.saveAsDialog(tabState.filePath);
+    // Always show save dialog, use current path or tab title as default
+    let defaultPath = tabState.filePath;
+    if (!defaultPath) {
+        defaultPath = tabState.title !== 'Untitled' ? tabState.title : 'Untitled.txti';
+        // Add .txti extension if not already present
+        if (defaultPath !== 'Untitled.txti' && !defaultPath.endsWith('.txti')) {
+            defaultPath += '.txti';
+        }
+    }
+    const filePath = await window.teximg.saveAsDialog(defaultPath);
     if (!filePath) return;
 
     saveEditorToState(state.activeTabId);

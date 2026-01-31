@@ -5,5 +5,5 @@ txti-files/
 # Test coverage
 coverage/
 
-TODO.md
-GUIDE.md
+*.md
+!README.md
