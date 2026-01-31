@@ -228,8 +228,9 @@ body {
 
 .tab-title {
     flex: 1;
-    display: flex;
     overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     min-width: 0;
 }
 
@@ -245,14 +246,17 @@ body {
 }
 
 /* Modified indicator */
-/* Modified indicator removed from pseudo-element */
-
-.tab-unsaved-indicator {
+.tab-modified-indicator {
     display: none;
     color: var(--text-muted);
-    font-size: 8px;
-    margin-left: 6px;
+    font-size: 10px;
+    margin-left: 4px;
     flex-shrink: 0;
+    line-height: 1;
+}
+
+.tab.modified .tab-modified-indicator {
+    display: block;
 }
 
 .tab-close {

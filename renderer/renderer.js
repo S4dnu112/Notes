@@ -1,7 +1,7 @@
 import { initEditor, setUpdateTabUI, setUpdateStatusBar, setDebouncedSaveSession } from './modules/Editor.js';
 import { initSettings, loadSettings } from './modules/SettingsManager.js';
 import { initUI, updateStatusBar } from './modules/UIManager.js';
-import { createTab, openFile, saveFile, saveFileAs, closeTab, restoreSession, markModified, updateTabUI, debouncedSaveSession, saveFullSessionState } from './modules/TabManager.js';
+import { createTab, openFile, saveFile, saveFileAs, closeTab, restoreSession, updateTabUI, debouncedSaveSession, saveFullSessionState } from './modules/TabManager.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {

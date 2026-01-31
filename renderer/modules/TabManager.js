@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { generateTabId, getFilename, formatDirectoryPath, debounce } from './utils.js';
+import { generateTabId, getFilename, formatDirectoryPath, debounce, truncateTabTitle } from './utils.js';
 import { renderContentToEditor, saveEditorToState, deselectImage } from './Editor.js';
 import { updateStatusBar, updateHeaderPath } from './UIManager.js';
 
@@ -41,7 +41,7 @@ export function createTab(filePath = null, content = []) {
     const tabState = {
         id,
         filePath,
-        title: filePath ? getFilename(filePath) : 'Untitled',
+        title: truncateTabTitle(filePath ? getFilename(filePath) : 'Untitled'),
         modified: false,
         imagesLoaded: false,
         content,
@@ -93,23 +93,24 @@ export async function switchToTab(tabId) {
     if (state.activeTabId === tabId) return;
 
     // Save current editor content to old tab
-    if (state.activeTabId) {
-        saveEditorToState(state.activeTabId);
-        const oldTab = tabsContainer.querySelector(`[data-tab-id="${state.activeTabId}"]`);
-        if (oldTab) oldTab.classList.remove('active');
+    const oldTabId = state.activeTabId;
+    if (oldTabId) {
+        saveEditorToState(oldTabId);
     }
 
+    // Update activeTabId BEFORE updating UI
     state.activeTabId = tabId;
+    
+    // Now update both tabs' UI (old will lose active, new will gain active)
+    if (oldTabId) {
+        updateTabUI(oldTabId);
+    }
+    updateTabUI(tabId);
+
     const tabState = state.tabs.get(tabId);
 
     updateHeaderPath(formatDirectoryPath(tabState.filePath));
-
-    // Update tab UI
-    const newTab = tabsContainer.querySelector(`[data-tab-id="${tabId}"]`);
-    if (newTab) {
-        newTab.classList.add('active');
-        scrollTabIntoView(tabId);
-    }
+    scrollTabIntoView(tabId);
 
     // Render content to editor BEFORE loading images
     // This ensures content shows immediately
@@ -146,9 +147,14 @@ function renderTab(tabState) {
     tab.innerHTML = `
         <span class="tab-icon">📄</span>
         <span class="tab-title"></span>
+        <span class="tab-modified-indicator">●</span>
         <span class="tab-close" title="Close">×</span>
     `;
     tab.querySelector('.tab-title').textContent = tabState.title;
+
+    // Apply state-based classes on initial render
+    tab.classList.toggle('modified', tabState.modified);
+    tab.classList.toggle('active', tabState.id === state.activeTabId);
 
     tab.addEventListener('click', (e) => {
         if (!e.target.classList.contains('tab-close')) {
@@ -187,14 +193,6 @@ function scrollTabIntoView(tabId) {
     const tab = tabsContainer.querySelector(`[data-tab-id="${tabId}"]`);
     if (!tab) return;
     tab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
-}
-
-export function markModified() {
-    const tabState = state.tabs.get(state.activeTabId);
-    if (tabState && !tabState.modified) {
-        tabState.modified = true;
-        updateTabUI(state.activeTabId);
-    }
 }
 
 // ============================================
@@ -301,7 +299,7 @@ export async function openFile(filePath = null) {
     const tabState = {
         id: tabId,
         filePath,
-        title: getFilename(filePath),
+        title: truncateTabTitle(getFilename(filePath)),
         modified: false,
         imagesLoaded: false,
         content: result.content,
@@ -348,7 +346,7 @@ export async function saveFile() {
 
     if (result.success) {
         tabState.filePath = filePath;
-        tabState.title = getFilename(filePath);
+        tabState.title = truncateTabTitle(getFilename(filePath));
         tabState.modified = false;
 
         Object.assign(tabState.imageMap, tabState.tempImages);
@@ -390,7 +388,7 @@ export async function saveFileAs() {
 
     if (result.success) {
         tabState.filePath = filePath;
-        tabState.title = getFilename(filePath);
+        tabState.title = truncateTabTitle(getFilename(filePath));
         tabState.modified = false;
 
         Object.assign(tabState.imageMap, tabState.tempImages);

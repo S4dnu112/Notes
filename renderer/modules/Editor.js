@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { getFilename } from './utils.js';
+import { getFilename, truncateTabTitle } from './utils.js';
 
 let updateTabUI = () => { };
 let updateStatusBar = () => { };
@@ -386,7 +386,7 @@ function updateCurrentTabTitle() {
     if (tabState.filePath) return;
 
     const text = editor.innerText;
-    const newTitle = getDisplayTitle(text);
+    const newTitle = truncateTabTitle(getDisplayTitle(text));
 
     if (tabState.title !== newTitle) {
         tabState.title = newTitle;
