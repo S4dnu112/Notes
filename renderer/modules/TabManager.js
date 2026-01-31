@@ -38,11 +38,6 @@ export function createTab(filePath = null, content = []) {
 export async function closeTab(tabId) {
     const tabState = state.tabs.get(tabId);
 
-    if (tabState && tabState.modified) {
-        // In a real app, you'd show a confirmation dialog
-        // For now, we proceed as per original code
-    }
-
     // Cleanup temp directory
     await window.teximg.closeTab(tabId);
 
@@ -118,7 +113,6 @@ function renderTab(tabState) {
     tab.dataset.tabId = tabState.id;
     tab.draggable = true;
 
-    // Security Fix: Use textContent for title to prevent XSS
     tab.innerHTML = `
         <span class="tab-icon">📄</span>
         <span class="tab-title"></span>
@@ -273,21 +267,6 @@ export async function openFile(filePath = null) {
         return;
     }
 
-    // Helper to get title from content if needed, but for now strict filename
-    // Actually renderer.js logic:
-    // title: getDisplayTitle(result.content.map(c => c.val || '').join('')) || getFilename(filePath),
-    // I should replicate this or just use filename. User wanted Dynamic Titles in a previous conversation.
-    // I will use filename for initial open, as dynamic title updates on input.
-    // Wait, the conversation history says "Dynamic Tab Titles" was a user objective.
-    // I should check if I need to implement that here.
-    // renderer.js (lines 829) had: getDisplayTitle(...) || getFilename(...)
-    // I should implement getDisplayTitle helper here or import it?
-    // It's in Editor.js. I should probably just use filename for now and let Editor update it on load?
-    // Editor updates on input.
-    // I'll stick to filename for safety and simplicity during refactor, unless I can maintain the feature easily.
-    // I'll import getDisplayTitle from Editor? No, it's not exported.
-    // I will use getFilename for now. The editor will update it on first input, or I can trigger it.
-
     const tabState = {
         id: tabId,
         filePath,
@@ -303,8 +282,6 @@ export async function openFile(filePath = null) {
     state.tabOrder.push(tabId);
     renderTab(tabState);
     switchToTab(tabId);
-    // Explicitly update title based on content?
-    // We can do that later if needed.
 
     saveSessionState();
 }

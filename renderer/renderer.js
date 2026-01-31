@@ -34,39 +34,33 @@ document.addEventListener('DOMContentLoaded', async () => {
             createTab();
         }
         updateStatusBar();
+
+        // Drag and drop support
+        document.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+
+        document.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            for (const file of e.dataTransfer.files) {
+                if (file.path) {
+                    await openFile(file.path);
+                }
+            }
+        });
+
+        // Save full session on app close
+        window.addEventListener('beforeunload', () => {
+            saveFullSessionState();
+        });
     } catch (error) {
         console.error('Failed to initialize application:', error);
-        // Show error to user
         document.body.innerHTML = `<div style="padding: 20px; color: red; font-family: monospace;">
             <h2>Application failed to initialize</h2>
             <pre>${error.stack || error.message || error}</pre>
         </div>`;
     }
-
-    // Drag and drop support
-    document.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-    });
-
-    document.addEventListener('drop', async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        for (const file of e.dataTransfer.files) {
-            // Electron provides the full path in file.path
-            if (file.path) {
-                // Determine if it's a supported file type if needed, 
-                // but for now we try to open generic text files or specifically .txti
-                // as per user request "Ability to drag .txti files".
-                // We'll trust openFile to handle it or just open it.
-                await openFile(file.path);
-            }
-        }
-    });
-
-    // Save full session on app close (tab order/history/all content)
-    window.addEventListener('beforeunload', () => {
-        saveFullSessionState();
-    });
 });

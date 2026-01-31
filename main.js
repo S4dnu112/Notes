@@ -129,8 +129,8 @@ function createWindow(isFirstWindow = false) {
         allWindows.delete(win);
     });
 
-    // Open DevTools in development
-    win.webContents.openDevTools();
+
+    // win.webContents.openDevTools(); // Uncomment to enable DevTools
 
     return win;
 }
@@ -373,7 +373,6 @@ ipcMain.handle('clipboard:paste-image', (event, tabId, imageDataUrl) => {
         const filename = `${uuidv4()}.png`;
         const filePath = path.join(tempDir, filename);
 
-        // Parse data URL and write binary
         const base64Data = imageDataUrl.replace(/^data:image\/\w+;base64,/, '');
         const buffer = Buffer.from(base64Data, 'base64');
         fs.writeFileSync(filePath, buffer);
@@ -390,7 +389,6 @@ ipcMain.handle('clipboard:read-image', () => {
     if (image.isEmpty()) {
         return null;
     }
-    // Return as PNG buffer
     return image.toPNG();
 });
 

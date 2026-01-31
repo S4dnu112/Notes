@@ -1,19 +1,4 @@
 import { state } from './state.js';
-// TabManager imports removed to prevent circular dependency. Functions are passed to initUI.
-
-// Imports (circular dependency risk check: UIManager depends on TabManager. TabManager depends on UIManager for updateTabUI).
-// To avoid circular dep, pass callbacks or inject dependencies. Or use event bus.
-// For now, I'll export updateTabUI here, but TabManager might import it.
-// If I use "import { updateTabUI } from './UIManager.js'" in TabManager, and "import { createTab } from './TabManager.js'" in UIManager:
-// This is circular.
-// Solution:
-// Move `updateTabUI` to `TabManager`. But `Editor.js` also needs `updateTabUI`.
-// If `updateTabUI` is in `TabManager`, clean.
-// `UIManager.js` handles Menu, Status Bar, Title Bar (min/max/close).
-
-// Let's put `updateTabUI` in `TabManager` where it belongs (it manages Tabs).
-// And `updateStatusBar` where? `UIManager`.
-
 import { undo, redo, setZoom } from './Editor.js';
 import { openSettings } from './SettingsManager.js';
 
@@ -153,39 +138,23 @@ function setupCloseRequestHandler({ saveFile }) {
 
     window.teximg.onCloseRequest(async ({ isLastWindow }) => {
         if (isLastWindow) {
-            // CASE B: Last window - save session silently and close
-            // The beforeunload handler in renderer.js will save the session
             window.teximg.forceClose();
         } else {
-            // CASE A: Multiple windows - check for dirty tabs
             const dirtyTabs = getDirtyTabs();
 
             if (dirtyTabs.length === 0) {
-                // No dirty tabs - close immediately
                 window.teximg.forceClose();
                 return;
             }
 
-            // Show save dialog for each dirty tab
             for (const tabState of dirtyTabs) {
                 const response = await window.teximg.showUnsavedChangesDialog(tabState.title);
 
                 if (response === 'cancel') {
-                    return; // Abort close
+                    return;
                 }
-
-                if (response === 'save') {
-                    // Switch to tab and save
-                    // For simplicity, we'll just reject close if there are dirty tabs
-                    // The user should save manually before closing
-                    // Or we can implement batch save here
-
-                    // For now, prompt but don't block if they choose discard
-                }
-                // 'discard' - continue to next tab or close
             }
 
-            // All dirty tabs handled (either saved or user chose discard)
             window.teximg.forceClose();
         }
     });
@@ -202,17 +171,13 @@ function getDirtyTabs() {
     return dirtyTabs;
 }
 
-// Request window close - manually trigger the close request logic
-// Since btn-close bypasses the native window close event, we manually check and handle
 async function requestWindowClose() {
     const windowCount = await window.teximg.getWindowCount();
     const isLastWindow = windowCount === 1;
 
     if (isLastWindow) {
-        // CASE B: Last window - save session silently and close
         window.teximg.forceClose();
     } else {
-        // CASE A: Multiple windows - check for dirty tabs
         const dirtyTabs = getDirtyTabs();
 
         if (dirtyTabs.length === 0) {
@@ -220,14 +185,12 @@ async function requestWindowClose() {
             return;
         }
 
-        // Show save dialog for each dirty tab
         for (const tabState of dirtyTabs) {
             const response = await window.teximg.showUnsavedChangesDialog(tabState.title);
 
             if (response === 'cancel') {
-                return; // Abort close
+                return;
             }
-            // 'save' or 'discard' - continue to next tab or close
         }
 
         window.teximg.forceClose();

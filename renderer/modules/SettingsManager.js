@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { setZoom } from './Editor.js'; // Might need to move setZoom or expose it
+import { setZoom } from './Editor.js';
 
 // DOM Elements
 const settingsOverlay = document.getElementById('settings-overlay');

@@ -1,9 +1,8 @@
 import { state } from './state.js';
 import { getFilename } from './utils.js';
-// UIManager import removed. Injected.
 
-let updateTabUI = () => { }; // No-op until injected
-let updateStatusBar = () => { }; // No-op until injected
+let updateTabUI = () => { };
+let updateStatusBar = () => { };
 
 export function setUpdateTabUI(fn) {
     updateTabUI = fn;
@@ -13,7 +12,7 @@ export function setUpdateStatusBar(fn) {
     updateStatusBar = fn;
 }
 
-let debouncedSaveSession = () => { }; // No-op until injected
+let debouncedSaveSession = () => { };
 
 export function setDebouncedSaveSession(fn) {
     debouncedSaveSession = fn;
@@ -52,8 +51,6 @@ export function initEditor() {
     document.getElementById('editor-container').addEventListener('scroll', updateHandlePosition);
     window.addEventListener('resize', updateHandlePosition);
 
-    // Zoom/Settings checks? (Might be in UIManager or SettingsManager)
-    // Actually, zoom functions are related to editor.
 }
 
 export function getEditorElement() {
@@ -400,6 +397,4 @@ export function redo() { document.execCommand('redo'); }
 export function setZoom(level) {
     state.zoomLevel = Math.max(10, Math.min(500, level));
     editor.style.fontSize = `${15 * (state.zoomLevel / 100)}px`;
-    // updateZoomDisplay call will be handled by UI listeners watching state or called explicitly if needed
-    // Actually, Editor doesn't touch UI directly usually, but it sets style. 
 }
