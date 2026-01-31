@@ -35,6 +35,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         updateStatusBar();
 
+        // Welcome screen buttons
+        document.getElementById('welcome-new-file')?.addEventListener('click', () => createTab());
+        document.getElementById('welcome-open-file')?.addEventListener('click', () => openFile());
+
         // Drag and drop support
         document.addEventListener('dragover', (e) => {
             e.preventDefault();

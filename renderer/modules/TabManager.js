@@ -5,12 +5,37 @@ import { updateStatusBar, updateHeaderPath } from './UIManager.js';
 
 // DOM Elements
 const tabsContainer = document.getElementById('tabs-container');
+const tabsRow = document.getElementById('tabs-row');
+const welcomeScreen = document.getElementById('welcome-screen');
+const editorContainer = document.getElementById('editor-container');
 
 // ============================================
 // Tab Lifecycle
 // ============================================
 
+function showWelcomeScreen() {
+    if (welcomeScreen) welcomeScreen.classList.remove('hidden');
+    if (editorContainer) editorContainer.classList.add('hidden');
+    updateHeaderPath('');
+}
+
+function hideWelcomeScreen() {
+    if (welcomeScreen) welcomeScreen.classList.add('hidden');
+    if (editorContainer) editorContainer.classList.remove('hidden');
+}
+
+function updateTabsVisibility() {
+    if (tabsRow) {
+        if (state.tabs.size <= 1) {
+            tabsRow.classList.add('hidden');
+        } else {
+            tabsRow.classList.remove('hidden');
+        }
+    }
+}
+
 export function createTab(filePath = null, content = []) {
+    hideWelcomeScreen();
     const id = generateTabId();
 
     const tabState = {
@@ -28,6 +53,7 @@ export function createTab(filePath = null, content = []) {
     state.tabOrder.push(id);
     renderTab(tabState);
     switchToTab(id);
+    updateTabsVisibility();
 
     // Initialize temp directory in main process
     window.teximg.newFile(id);
@@ -55,10 +81,11 @@ export async function closeTab(tabId) {
         if (state.tabOrder.length > 0) {
             switchToTab(state.tabOrder[0]);
         } else {
-            createTab();
+            showWelcomeScreen();
         }
     }
 
+    updateTabsVisibility();
     saveSessionState();
 }
 
@@ -247,6 +274,7 @@ function reorderTabsDOM() {
 // ============================================
 
 export async function openFile(filePath = null) {
+    hideWelcomeScreen();
     if (!filePath) {
         filePath = await window.teximg.openDialog();
         if (!filePath) return;
@@ -447,6 +475,8 @@ export async function restoreSession() {
     if (activeId) {
         await switchToTab(activeId);
     }
+    
+    updateTabsVisibility();
 }
 
 // Create a debounced version for frequent saves

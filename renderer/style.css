@@ -791,3 +791,79 @@ body {
     white-space: pre;
     overflow-x: auto;
 }
+
+/* ============================================
+   Welcome Screen
+   ============================================ */
+#welcome-screen {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-content);
+    overflow: hidden;
+}
+
+.welcome-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    max-width: 500px;
+    padding: 40px;
+}
+
+.welcome-icon {
+    margin-bottom: 24px;
+    opacity: 0.8;
+}
+
+.welcome-title {
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+}
+
+.welcome-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+    line-height: 1.5;
+}
+
+.welcome-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.welcome-btn {
+    padding: 10px 24px;
+    font-size: 14px;
+    font-family: var(--font-ui);
+    font-weight: 500;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    background: var(--accent);
+    color: white;
+}
+
+.welcome-btn:hover {
+    background: var(--accent-hover);
+}
+
+.welcome-btn:active {
+    transform: scale(0.98);
+}
+
+.welcome-btn-secondary {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+}
+
+.welcome-btn-secondary:hover {
+    background: rgba(0, 120, 212, 0.08);
+}
