@@ -40,18 +40,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('welcome-open-file')?.addEventListener('click', () => openFile());
 
         // Drag and drop support
-        document.addEventListener('dragover', (e) => {
+        document.addEventListener('dragover', (e: DragEvent) => {
             e.preventDefault();
             e.stopPropagation();
         });
 
-        document.addEventListener('drop', async (e) => {
+        document.addEventListener('drop', async (e: DragEvent) => {
             e.preventDefault();
             e.stopPropagation();
 
-            for (const file of e.dataTransfer.files) {
-                if (file.path) {
-                    await openFile(file.path);
+            if (!e.dataTransfer) return;
+
+            for (const file of Array.from(e.dataTransfer.files)) {
+                const filePath = (file as any).path;
+                if (filePath) {
+                    await openFile(filePath);
                 }
             }
         });
@@ -60,7 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.addEventListener('beforeunload', () => {
             saveFullSessionState();
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Failed to initialize application:', error);
         document.body.innerHTML = `<div style="padding: 20px; color: red; font-family: monospace;">
             <h2>Application failed to initialize</h2>

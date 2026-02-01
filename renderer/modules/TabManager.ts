@@ -1,30 +1,31 @@
 import { state } from './state.js';
 import { generateTabId, getFilename, formatDirectoryPath, debounce, truncateTabTitle } from './utils.js';
-import { renderContentToEditor, saveEditorToState, deselectImage } from './Editor.js';
+import { renderContentToEditor, saveEditorToState } from './Editor.js';
 import { updateStatusBar, updateHeaderPath } from './UIManager.js';
+import { TabState, Content } from '../../types';
 
 // DOM Elements
-const tabsContainer = document.getElementById('tabs-container');
-const tabsRow = document.getElementById('tabs-row');
-const welcomeScreen = document.getElementById('welcome-screen');
-const editorContainer = document.getElementById('editor-container');
+const tabsContainer = document.getElementById('tabs-container') as HTMLDivElement;
+const tabsRow = document.getElementById('tabs-row') as HTMLDivElement;
+const welcomeScreen = document.getElementById('welcome-screen') as HTMLDivElement;
+const editorContainer = document.getElementById('editor-container') as HTMLDivElement;
 
 // ============================================
 // Tab Lifecycle
 // ============================================
 
-function showWelcomeScreen() {
+function showWelcomeScreen(): void {
     if (welcomeScreen) welcomeScreen.classList.remove('hidden');
     if (editorContainer) editorContainer.classList.add('hidden');
     updateHeaderPath('');
 }
 
-function hideWelcomeScreen() {
+function hideWelcomeScreen(): void {
     if (welcomeScreen) welcomeScreen.classList.add('hidden');
     if (editorContainer) editorContainer.classList.remove('hidden');
 }
 
-function updateTabsVisibility() {
+function updateTabsVisibility(): void {
     if (tabsRow) {
         if (state.tabs.size <= 1) {
             tabsRow.classList.add('hidden');
@@ -34,11 +35,11 @@ function updateTabsVisibility() {
     }
 }
 
-export function createTab(filePath = null, content = []) {
+export function createTab(filePath: string | null = null, content: Content = []): string {
     hideWelcomeScreen();
     const id = generateTabId();
 
-    const tabState = {
+    const tabState: TabState = {
         id,
         filePath,
         title: truncateTabTitle(filePath ? getFilename(filePath) : 'Untitled'),
@@ -61,9 +62,7 @@ export function createTab(filePath = null, content = []) {
     return id;
 }
 
-export async function closeTab(tabId) {
-    const tabState = state.tabs.get(tabId);
-
+export async function closeTab(tabId: string): Promise<void> {
     // Cleanup temp directory
     await window.teximg.closeTab(tabId);
 
@@ -89,7 +88,7 @@ export async function closeTab(tabId) {
     saveSessionState();
 }
 
-export async function switchToTab(tabId) {
+export async function switchToTab(tabId: string): Promise<void> {
     if (state.activeTabId === tabId) return;
 
     // Save current editor content to old tab
@@ -108,6 +107,7 @@ export async function switchToTab(tabId) {
     updateTabUI(tabId);
 
     const tabState = state.tabs.get(tabId);
+    if (!tabState) return;
 
     updateHeaderPath(formatDirectoryPath(tabState.filePath));
     scrollTabIntoView(tabId);
@@ -118,8 +118,8 @@ export async function switchToTab(tabId) {
 
     // Load images if not already loaded (lazy loading)
     if (tabState.filePath && !tabState.imagesLoaded) {
-        const result = await window.teximg.loadImages(tabState.filePath, tabId);
-        if (result.success) {
+        const result = await window.teximg.loadImages({ filePath: tabState.filePath, tabId });
+        if (result.success && result.imageMap) {
             tabState.imageMap = result.imageMap;
             tabState.imagesLoaded = true;
             // Re-render to show loaded images
@@ -138,7 +138,7 @@ export async function switchToTab(tabId) {
 // UI Rendering
 // ============================================
 
-function renderTab(tabState) {
+function renderTab(tabState: TabState): void {
     const tab = document.createElement('div');
     tab.className = 'tab';
     tab.dataset.tabId = tabState.id;
@@ -150,19 +150,19 @@ function renderTab(tabState) {
         <span class="tab-modified-indicator">●</span>
         <span class="tab-close" title="Close">×</span>
     `;
-    tab.querySelector('.tab-title').textContent = tabState.title;
+    (tab.querySelector('.tab-title') as HTMLSpanElement).textContent = tabState.title;
 
     // Apply state-based classes on initial render
     tab.classList.toggle('modified', tabState.modified);
     tab.classList.toggle('active', tabState.id === state.activeTabId);
 
-    tab.addEventListener('click', (e) => {
-        if (!e.target.classList.contains('tab-close')) {
+    tab.addEventListener('click', (e: MouseEvent) => {
+        if (!(e.target as HTMLElement).classList.contains('tab-close')) {
             switchToTab(tabState.id);
         }
     });
 
-    tab.querySelector('.tab-close').addEventListener('click', (e) => {
+    (tab.querySelector('.tab-close') as HTMLSpanElement).addEventListener('click', (e: MouseEvent) => {
         e.stopPropagation();
         closeTab(tabState.id);
     });
@@ -177,19 +177,19 @@ function renderTab(tabState) {
     tabsContainer.appendChild(tab);
 }
 
-export function updateTabUI(tabId) {
+export function updateTabUI(tabId: string): void {
     const tabState = state.tabs.get(tabId);
     if (!tabState) return;
 
     const tabEl = tabsContainer.querySelector(`[data-tab-id="${tabId}"]`);
     if (!tabEl) return;
 
-    tabEl.querySelector('.tab-title').textContent = tabState.title;
+    (tabEl.querySelector('.tab-title') as HTMLSpanElement).textContent = tabState.title;
     tabEl.classList.toggle('modified', tabState.modified);
     tabEl.classList.toggle('active', tabId === state.activeTabId);
 }
 
-function scrollTabIntoView(tabId) {
+function scrollTabIntoView(tabId: string): void {
     const tab = tabsContainer.querySelector(`[data-tab-id="${tabId}"]`);
     if (!tab) return;
     tab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
@@ -199,15 +199,18 @@ function scrollTabIntoView(tabId) {
 // Drag and Drop
 // ============================================
 
-function handleTabDragStart(e) {
-    state.draggedTabId = e.currentTarget.dataset.tabId;
-    e.currentTarget.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', state.draggedTabId);
+function handleTabDragStart(e: DragEvent): void {
+    const target = e.currentTarget as HTMLDivElement;
+    state.draggedTabId = target.dataset.tabId || null;
+    target.classList.add('dragging');
+    if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', state.draggedTabId || '');
+    }
 }
 
-function handleTabDragEnd(e) {
-    e.currentTarget.classList.remove('dragging');
+function handleTabDragEnd(e: DragEvent): void {
+    (e.currentTarget as HTMLDivElement).classList.remove('dragging');
     state.draggedTabId = null;
 
     document.querySelectorAll('.tab').forEach(tab => {
@@ -215,11 +218,13 @@ function handleTabDragEnd(e) {
     });
 }
 
-function handleTabDragOver(e) {
+function handleTabDragOver(e: DragEvent): void {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    if (e.dataTransfer) {
+        e.dataTransfer.dropEffect = 'move';
+    }
 
-    const tab = e.currentTarget;
+    const tab = e.currentTarget as HTMLDivElement;
     if (tab.dataset.tabId === state.draggedTabId) return;
 
     const rect = tab.getBoundingClientRect();
@@ -233,17 +238,17 @@ function handleTabDragOver(e) {
     }
 }
 
-function handleTabDragLeave(e) {
-    e.currentTarget.classList.remove('drag-over-left', 'drag-over-right');
+function handleTabDragLeave(e: DragEvent): void {
+    (e.currentTarget as HTMLDivElement).classList.remove('drag-over-left', 'drag-over-right');
 }
 
-function handleTabDrop(e) {
+function handleTabDrop(e: DragEvent): void {
     e.preventDefault();
 
-    const targetTab = e.currentTarget;
+    const targetTab = e.currentTarget as HTMLDivElement;
     const targetId = targetTab.dataset.tabId;
 
-    if (!state.draggedTabId || state.draggedTabId === targetId) return;
+    if (!state.draggedTabId || state.draggedTabId === targetId || !targetId) return;
 
     const rect = targetTab.getBoundingClientRect();
     const midpoint = rect.left + rect.width / 2;
@@ -261,7 +266,7 @@ function handleTabDrop(e) {
     targetTab.classList.remove('drag-over-left', 'drag-over-right');
 }
 
-function reorderTabsDOM() {
+function reorderTabsDOM(): void {
     state.tabOrder.forEach(tabId => {
         const tab = tabsContainer.querySelector(`[data-tab-id="${tabId}"]`);
         if (tab) {
@@ -274,7 +279,7 @@ function reorderTabsDOM() {
 // File Operations
 // ============================================
 
-export async function openFile(filePath = null) {
+export async function openFile(filePath: string | null = null): Promise<void> {
     hideWelcomeScreen();
     if (!filePath) {
         filePath = await window.teximg.openDialog();
@@ -291,12 +296,12 @@ export async function openFile(filePath = null) {
     const tabId = generateTabId();
     const result = await window.teximg.openFile(filePath, tabId);
 
-    if (!result.success) {
+    if (!result.success || !result.content) {
         console.error('Failed to open file:', result.error);
         return;
     }
 
-    const tabState = {
+    const tabState: TabState = {
         id: tabId,
         filePath,
         title: truncateTabTitle(getFilename(filePath)),
@@ -316,7 +321,7 @@ export async function openFile(filePath = null) {
     saveSessionState();
 }
 
-export async function saveFile() {
+export async function saveFile(): Promise<void> {
     if (!state.activeTabId) return;
 
     const tabState = state.tabs.get(state.activeTabId);
@@ -336,12 +341,12 @@ export async function saveFile() {
 
     saveEditorToState(state.activeTabId);
 
-    const imageFiles = { ...tabState.imageMap, ...tabState.tempImages };
-
     const result = await window.teximg.saveFile({
+        tabId: state.activeTabId,
         filePath,
         content: tabState.content,
-        imageFiles
+        imageMap: tabState.imageMap,
+        tempImages: tabState.tempImages
     });
 
     if (result.success) {
@@ -358,7 +363,7 @@ export async function saveFile() {
     }
 }
 
-export async function saveFileAs() {
+export async function saveFileAs(): Promise<void> {
     if (!state.activeTabId) return;
 
     const tabState = state.tabs.get(state.activeTabId);
@@ -378,12 +383,12 @@ export async function saveFileAs() {
 
     saveEditorToState(state.activeTabId);
 
-    const imageFiles = { ...tabState.imageMap, ...tabState.tempImages };
-
     const result = await window.teximg.saveFile({
+        tabId: state.activeTabId,
         filePath,
         content: tabState.content,
-        imageFiles
+        imageMap: tabState.imageMap,
+        tempImages: tabState.tempImages
     });
 
     if (result.success) {
@@ -399,16 +404,16 @@ export async function saveFileAs() {
     }
 }
 
-async function saveSessionState() {
+async function saveSessionState(): Promise<void> {
     // Save current editor content to active tab before persisting
     if (state.activeTabId) {
         saveEditorToState(state.activeTabId);
     }
 
     // Build tabs array with full content
-    const tabs = [];
+    const tabs: any[] = [];
     for (const tabState of state.tabs.values()) {
-        const tabData = {
+        const tabData: any = {
             id: tabState.id,
             filePath: tabState.filePath,
             title: tabState.title,
@@ -433,7 +438,7 @@ async function saveSessionState() {
     });
 }
 
-export async function restoreSession() {
+export async function restoreSession(): Promise<void> {
     const session = await window.teximg.getFullSession();
 
     // If no full session, try legacy or create new tab
@@ -452,7 +457,7 @@ export async function restoreSession() {
 
     // Restore tabs from full session
     for (const savedTab of session.tabs) {
-        const tabState = {
+        const tabState: TabState = {
             id: savedTab.id,
             filePath: savedTab.filePath,
             title: savedTab.title,
@@ -479,7 +484,7 @@ export async function restoreSession() {
 
     // Restore tab order if different from insertion order
     if (session.tabOrder) {
-        state.tabOrder = session.tabOrder.filter(id => state.tabs.has(id));
+        state.tabOrder = session.tabOrder.filter((id: string) => state.tabs.has(id));
         reorderTabsDOM();
     }
 

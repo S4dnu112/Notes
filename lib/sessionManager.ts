@@ -1,14 +1,24 @@
-const fs = require('fs');
-const path = require('path');
-const { app } = require('electron');
+import * as fs from 'fs';
+import * as path from 'path';
+import { app } from 'electron';
+import { SessionData, TabState } from '../types';
 
 const SESSION_FILE = path.join(app.getPath('userData'), 'session.json');
 
-function getSession() {
+interface LegacySession {
+    openFiles?: string[];
+    savedAt?: string;
+}
+
+interface FullSession extends SessionData {
+    savedAt?: string;
+}
+
+export function getSession(): string[] {
     try {
         if (fs.existsSync(SESSION_FILE)) {
             const data = fs.readFileSync(SESSION_FILE, 'utf-8');
-            const session = JSON.parse(data);
+            const session: LegacySession = JSON.parse(data);
             return session.openFiles || [];
         }
     } catch (err) {
@@ -17,9 +27,9 @@ function getSession() {
     return [];
 }
 
-function saveSession(filePaths) {
+export function saveSession(filePaths: string[]): void {
     try {
-        const session = {
+        const session: LegacySession = {
             openFiles: filePaths,
             savedAt: new Date().toISOString()
         };
@@ -29,16 +39,16 @@ function saveSession(filePaths) {
     }
 }
 
-function getFullSession() {
+export function getFullSession(): SessionData | null {
     try {
         if (fs.existsSync(SESSION_FILE)) {
             const data = fs.readFileSync(SESSION_FILE, 'utf-8');
-            const session = JSON.parse(data);
+            const session: any = JSON.parse(data);
             // Check if this is a full session (has tabs array)
             if (session.tabs) {
-                return session;
+                return session as SessionData;
             }
-            // Legacy format - return empty to create new tabs
+            // Legacy format - return null to create new tabs
             return null;
         }
     } catch (err) {
@@ -47,9 +57,9 @@ function getFullSession() {
     return null;
 }
 
-function saveFullSession(sessionData) {
+export function saveFullSession(sessionData: SessionData): void {
     try {
-        const session = {
+        const session: FullSession = {
             ...sessionData,
             savedAt: new Date().toISOString()
         };
@@ -59,10 +69,10 @@ function saveFullSession(sessionData) {
     }
 }
 
-function saveTabContent(tabData) {
+export function saveTabContent(tabData: TabState): void {
     try {
         // Read existing session
-        let session = {};
+        let session: any = {};
         if (fs.existsSync(SESSION_FILE)) {
             const data = fs.readFileSync(SESSION_FILE, 'utf-8');
             session = JSON.parse(data);
@@ -74,7 +84,7 @@ function saveTabContent(tabData) {
         }
 
         // Find and update existing tab or add new one
-        const existingIndex = session.tabs.findIndex(t => t.id === tabData.id);
+        const existingIndex = session.tabs.findIndex((t: TabState) => t.id === tabData.id);
         if (existingIndex !== -1) {
             session.tabs[existingIndex] = tabData;
         } else {
@@ -87,5 +97,3 @@ function saveTabContent(tabData) {
         console.error('Failed to save tab content:', err);
     }
 }
-
-module.exports = { getSession, saveSession, getFullSession, saveFullSession, saveTabContent };

@@ -1,8 +1,9 @@
-const AdmZip = require('adm-zip');
-const fs = require('fs').promises;
-const path = require('path');
+import AdmZip = require('adm-zip');
+import { promises as fs } from 'fs';
+import * as path from 'path';
+import { Content, ZipContent, ExtractImagesResult, ImageMap } from '../types';
 
-async function readContentJson(filePath) {
+export async function readContentJson(filePath: string): Promise<ZipContent> {
     try {
         const buffer = await fs.readFile(filePath);
         const zip = new AdmZip(buffer);
@@ -12,29 +13,30 @@ async function readContentJson(filePath) {
             throw new Error('Invalid .txti file: missing content.json');
         }
 
-        const contentJson = JSON.parse(contentEntry.getData().toString('utf-8'));
+        const contentJson: Content = JSON.parse(contentEntry.getData().toString('utf-8'));
 
         const assetList = zip.getEntries()
-            .filter(entry => entry.entryName.startsWith('assets/') && !entry.isDirectory)
-            .map(entry => path.basename(entry.entryName));
+            .filter((entry: AdmZip.IZipEntry) => entry.entryName.startsWith('assets/') && !entry.isDirectory)
+            .map((entry: AdmZip.IZipEntry) => path.basename(entry.entryName));
 
         return { content: contentJson, assetList };
     } catch (err) {
-        throw new Error(`Failed to read file: ${err.message}`);
+        const error = err as Error;
+        throw new Error(`Failed to read file: ${error.message}`);
     }
 }
 
-async function extractImages(filePath, destDir) {
+export async function extractImages(filePath: string, destDir: string): Promise<ExtractImagesResult> {
     await fs.mkdir(destDir, { recursive: true });
 
     const buffer = await fs.readFile(filePath);
     const zip = new AdmZip(buffer);
-    const imageMap = {};
+    const imageMap: ExtractImagesResult = {};
 
     const assetEntries = zip.getEntries()
-        .filter(entry => entry.entryName.startsWith('assets/') && !entry.isDirectory);
+        .filter((entry: AdmZip.IZipEntry) => entry.entryName.startsWith('assets/') && !entry.isDirectory);
 
-    const writePromises = assetEntries.map(async (entry) => {
+    const writePromises = assetEntries.map(async (entry: AdmZip.IZipEntry) => {
         const filename = path.basename(entry.entryName);
         const destPath = path.join(destDir, filename);
         const data = entry.getData();
@@ -47,7 +49,7 @@ async function extractImages(filePath, destDir) {
     return imageMap;
 }
 
-async function createZip(contentJson, imageFiles, outputPath) {
+export async function createZip(contentJson: Content, imageFiles: ImageMap, outputPath: string): Promise<void> {
     const zip = new AdmZip();
 
     const contentBuffer = Buffer.from(JSON.stringify(contentJson, null, 2), 'utf-8');
@@ -58,23 +60,22 @@ async function createZip(contentJson, imageFiles, outputPath) {
             const imageData = await fs.readFile(sourcePath);
             zip.addFile(`assets/${filename}`, imageData);
         } catch (err) {
-            console.warn(`Failed to read image ${sourcePath}: ${err.message}`);
+            const error = err as Error;
+            console.warn(`Failed to read image ${sourcePath}: ${error.message}`);
         }
     }
 
     return new Promise((resolve, reject) => {
-        zip.writeZip(outputPath, (err) => {
+        zip.writeZip(outputPath, (err: Error | null) => {
             if (err) reject(err);
             else resolve();
         });
     });
 }
 
-function createEmptyDocument() {
+export function createEmptyDocument(): ZipContent {
     return {
         content: [],
         assetList: []
     };
 }
-
-module.exports = { readContentJson, extractImages, createZip, createEmptyDocument };

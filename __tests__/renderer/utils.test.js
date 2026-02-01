@@ -252,4 +252,62 @@ describe('utils - unit tests', () => {
             jest.useRealTimers();
         });
     });
+
+    describe('truncateTabTitle', () => {
+        function truncateTabTitle(title) {
+            const MAX_LENGTH = 15;
+            
+            if (title.length <= MAX_LENGTH) return title;
+            
+            // Check if it has .txti extension
+            if (title.endsWith('.txti')) {
+                // Format: "basename-.txti" (total 15 chars)
+                // .txti = 5 chars, "-" = 1 char, so basename can be 9 chars
+                const maxBasenameLength = 9;
+                const basename = title.slice(0, -5); // Remove .txti
+                const truncatedBasename = basename.slice(0, maxBasenameLength);
+                return `${truncatedBasename}-.txti`;
+            } else {
+                // No extension, just truncate to 15 chars
+                return title.slice(0, MAX_LENGTH);
+            }
+        }
+
+        test('should not truncate titles under 15 characters', () => {
+            expect(truncateTabTitle('short.txti')).toBe('short.txti');
+            expect(truncateTabTitle('Untitled')).toBe('Untitled');
+            expect(truncateTabTitle('test')).toBe('test');
+        });
+
+        test('should not truncate 15-character titles', () => {
+            expect(truncateTabTitle('12345678.txti')).toBe('12345678.txti'); // exactly 14
+            expect(truncateTabTitle('123456789.txti')).toBe('123456789.txti'); // exactly 15
+        });
+
+        test('should truncate .txti files longer than 15 chars', () => {
+            expect(truncateTabTitle('verylongfilename.txti')).toBe('verylongf-.txti');
+            expect(truncateTabTitle('jflkasdjflk fjksdljflsj fjsdklfjflksdj.txti')).toBe('jflkasdjf-.txti');
+            expect(truncateTabTitle('12345678901.txti')).toBe('123456789-.txti'); // 16 chars -> truncate
+        });
+
+        test('should truncate titles without extension', () => {
+            expect(truncateTabTitle('verylongtitlehere')).toBe('verylongtitlehe');
+            expect(truncateTabTitle('this is a very long title')).toBe('this is a very ');
+            expect(truncateTabTitle('1234567890123456')).toBe('123456789012345');
+        });
+
+        test('should handle edge cases', () => {
+            expect(truncateTabTitle('')).toBe('');
+            expect(truncateTabTitle('.txti')).toBe('.txti');
+            expect(truncateTabTitle('a.txti')).toBe('a.txti');
+        });
+
+        test('should preserve exact format for .txti files', () => {
+            const result = truncateTabTitle('superlongfilename.txti');
+            expect(result).toBe('superlong-.txti');
+            expect(result.length).toBe(15);
+            expect(result.endsWith('.txti')).toBe(true);
+            expect(result.includes('-')).toBe(true);
+        });
+    });
 });

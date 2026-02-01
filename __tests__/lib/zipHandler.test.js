@@ -6,7 +6,7 @@ const {
     extractImages,
     createZip,
     createEmptyDocument
-} = require('../../lib/zipHandler');
+} = require('../../dist/lib/zipHandler');
 
 describe('zipHandler', () => {
     const testDir = '/tmp/ziphandler-test';

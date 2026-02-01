@@ -1,15 +1,15 @@
 import { state } from './state.js';
 
-export function generateTabId() {
+export function generateTabId(): string {
     return `tab-${Date.now()}-${++state.tabCounter}`;
 }
 
-export function getFilename(filePath) {
+export function getFilename(filePath: string | null): string {
     if (!filePath) return 'Untitled';
-    return filePath.split(/[/\\]/).pop();
+    return filePath.split(/[/\\]/).pop() || 'Untitled';
 }
 
-export function truncateTabTitle(title) {
+export function truncateTabTitle(title: string): string {
     const MAX_LENGTH = 15;
     
     if (title.length <= MAX_LENGTH) return title;
@@ -31,7 +31,7 @@ export function truncateTabTitle(title) {
     }
 }
 
-export function formatDirectoryPath(filePath) {
+export function formatDirectoryPath(filePath: string | null): string {
     if (!filePath) return 'Draft';
     
     // Normalize slashes
@@ -50,9 +50,12 @@ export function formatDirectoryPath(filePath) {
     return relevantParts.join('/') + '/';
 }
 
-export function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
+export function debounce<T extends (...args: any[]) => any>(
+    func: T,
+    wait: number
+): (...args: Parameters<T>) => void {
+    let timeout: NodeJS.Timeout | undefined;
+    return function executedFunction(...args: Parameters<T>) {
         const later = () => {
             clearTimeout(timeout);
             func(...args);

@@ -13,8 +13,8 @@ jest.mock('electron', () => ({
     ipcMain: { handle: jest.fn() }
 }));
 
-const { getFullSession, saveFullSession, saveTabContent } = require('../../lib/sessionManager');
-const { createZip, readContentJson } = require('../../lib/zipHandler');
+const { getFullSession, saveFullSession, saveTabContent } = require('../../dist/lib/sessionManager');
+const { createZip, readContentJson } = require('../../dist/lib/zipHandler');
 
 describe('Integration: Tab State Management', () => {
     const testDir = path.join(os.tmpdir(), 'tab-state-test');

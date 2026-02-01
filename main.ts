@@ -1,21 +1,39 @@
-const { app, BrowserWindow, ipcMain, dialog, nativeImage, clipboard, Menu } = require('electron');
-const path = require('path');
-const fs = require('fs');
-const os = require('os');
-const { v4: uuidv4 } = require('uuid');
+import { app, BrowserWindow, ipcMain, dialog, clipboard, Menu, IpcMainInvokeEvent, MessageBoxReturnValue } from 'electron';
+import * as path from 'path';
+import * as fs from 'fs';
+import * as os from 'os';
+import { v4 as uuidv4 } from 'uuid';
 
-const { readContentJson, extractImages, createZip, createEmptyDocument } = require('./dist/lib/zipHandler');
-const { getSession, saveSession, getFullSession, saveFullSession, saveTabContent } = require('./dist/lib/sessionManager');
-const { getSettings, saveSettings } = require('./dist/lib/settingsManager');
+import { readContentJson, extractImages, createZip, createEmptyDocument } from './lib/zipHandler';
+import { getSession, saveSession, getFullSession, saveFullSession, saveTabContent } from './lib/sessionManager';
+import { getSettings, saveSettings } from './lib/settingsManager';
+import { SessionData, EditorSettings } from './types';
+
+interface WindowBounds {
+    width: number;
+    height: number;
+    x?: number;
+    y?: number;
+}
+
+interface SaveFileParams {
+    filePath: string;
+    content: any[];
+    imageFiles: Record<string, string>;
+}
+
+interface CloseRequestContext {
+    isLastWindow: boolean;
+}
 
 // Store for temp directories per tab
-const tempDirs = new Map();
+const tempDirs = new Map<string, string>();
 
 // Track all open windows
-const allWindows = new Set();
+const allWindows = new Set<BrowserWindow>();
 
 // Create a unique temp directory for a tab
-function createTempDir(tabId) {
+function createTempDir(tabId: string): string {
     const tempDir = path.join(os.tmpdir(), 'txti-editor', tabId);
     if (!fs.existsSync(tempDir)) {
         fs.mkdirSync(tempDir, { recursive: true });
@@ -25,7 +43,7 @@ function createTempDir(tabId) {
 }
 
 // Clean up temp directory
-function cleanupTempDir(tabId) {
+function cleanupTempDir(tabId: string): void {
     const tempDir = tempDirs.get(tabId);
     if (tempDir && fs.existsSync(tempDir)) {
         fs.rmSync(tempDir, { recursive: true, force: true });
@@ -34,24 +52,24 @@ function cleanupTempDir(tabId) {
 }
 
 // Helper to get window from event
-function getWindowFromEvent(event) {
+function getWindowFromEvent(event: IpcMainInvokeEvent): BrowserWindow | null {
     return BrowserWindow.fromWebContents(event.sender);
 }
 
 // Get saved window bounds from settings
-function getWindowBounds() {
+function getWindowBounds(): WindowBounds {
     const settings = getSettings();
     return settings.windowBounds || { width: 1200, height: 800 };
 }
 
 // Save window bounds to settings
-function saveWindowBounds(bounds) {
+function saveWindowBounds(bounds: WindowBounds): void {
     const settings = getSettings();
     settings.windowBounds = bounds;
     saveSettings(settings);
 }
 
-function createWindow(isFirstWindow = false) {
+function createWindow(isFirstWindow: boolean = false): BrowserWindow {
     const bounds = getWindowBounds();
 
     // Calculate cascade offset for new windows
@@ -77,7 +95,7 @@ function createWindow(isFirstWindow = false) {
         frame: false,
         titleBarStyle: 'hidden',
         webPreferences: {
-            preload: path.join(__dirname, 'dist', 'preload.js'),
+            preload: path.join(__dirname, 'preload.js'),
             contextIsolation: true,
             nodeIntegration: false,
             webSecurity: true
@@ -87,7 +105,7 @@ function createWindow(isFirstWindow = false) {
     allWindows.add(win);
 
     // Load with query parameter to indicate if this is first window
-    win.loadFile(path.join(__dirname, 'renderer', 'index.html'), {
+    win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'), {
         query: { isFirstWindow: isFirstWindow ? '1' : '0' }
     });
 
@@ -101,7 +119,7 @@ function createWindow(isFirstWindow = false) {
     });
 
     // Save window bounds on resize/move (debounced)
-    let boundsTimeout;
+    let boundsTimeout: NodeJS.Timeout | undefined;
     const saveBoundsDebounced = () => {
         clearTimeout(boundsTimeout);
         boundsTimeout = setTimeout(() => {
@@ -122,13 +140,13 @@ function createWindow(isFirstWindow = false) {
         const isLastWindow = windowCount === 1;
 
         // Send close request to renderer with context
-        win.webContents.send('window:close-request', { isLastWindow });
+        const context: CloseRequestContext = { isLastWindow };
+        win.webContents.send('window:close-request', context);
     });
 
     win.on('closed', () => {
         allWindows.delete(win);
     });
-
 
     // win.webContents.openDevTools(); // Uncomment to enable DevTools
 
@@ -159,11 +177,11 @@ app.on('window-all-closed', () => {
 // ============== IPC HANDLERS ==============
 
 // Native popup menu
-ipcMain.handle('menu:show', (event) => {
+ipcMain.handle('menu:show', (event: IpcMainInvokeEvent) => {
     const win = getWindowFromEvent(event);
     if (!win) return;
 
-    const template = [
+    const template: Electron.MenuItemConstructorOptions[] = [
         { label: 'New Window', accelerator: 'CmdOrCtrl+N', click: () => win.webContents.send('menu:action', 'new-window') },
         { label: 'New Tab', accelerator: 'CmdOrCtrl+T', click: () => win.webContents.send('menu:action', 'new-tab') },
         { type: 'separator' },
@@ -184,12 +202,12 @@ ipcMain.handle('menu:show', (event) => {
 });
 
 // Window controls
-ipcMain.handle('window:minimize', (event) => {
+ipcMain.handle('window:minimize', (event: IpcMainInvokeEvent) => {
     const win = getWindowFromEvent(event);
     if (win) win.minimize();
 });
 
-ipcMain.handle('window:maximize', (event) => {
+ipcMain.handle('window:maximize', (event: IpcMainInvokeEvent) => {
     const win = getWindowFromEvent(event);
     if (win) {
         if (win.isMaximized()) {
@@ -201,7 +219,7 @@ ipcMain.handle('window:maximize', (event) => {
 });
 
 // Force close - called by renderer after handling dirty tabs or for session save
-ipcMain.handle('window:force-close', (event) => {
+ipcMain.handle('window:force-close', (event: IpcMainInvokeEvent) => {
     const win = getWindowFromEvent(event);
     if (win) {
         // Remove close event handler to allow actual close
@@ -220,15 +238,15 @@ ipcMain.handle('window:get-count', () => {
     return allWindows.size;
 });
 
-ipcMain.handle('window:isMaximized', (event) => {
+ipcMain.handle('window:isMaximized', (event: IpcMainInvokeEvent) => {
     const win = getWindowFromEvent(event);
     return win ? win.isMaximized() : false;
 });
 
 // Show unsaved changes dialog
-ipcMain.handle('dialog:unsaved-changes', async (event, filename) => {
+ipcMain.handle('dialog:unsaved-changes', async (event: IpcMainInvokeEvent, filename: string) => {
     const win = getWindowFromEvent(event);
-    const result = await dialog.showMessageBox(win, {
+    const result: MessageBoxReturnValue = await dialog.showMessageBox(win!, {
         type: 'question',
         buttons: ['Save', "Don't Save", 'Cancel'],
         defaultId: 0,
@@ -251,7 +269,7 @@ ipcMain.handle('session:get', () => {
 });
 
 // Save session
-ipcMain.handle('session:save', (event, filePaths) => {
+ipcMain.handle('session:save', (_event: IpcMainInvokeEvent, filePaths: string[]) => {
     saveSession(filePaths);
     return true;
 });
@@ -262,13 +280,13 @@ ipcMain.handle('session:get-full', () => {
 });
 
 // Save full session (with content)
-ipcMain.handle('session:save-full', (event, sessionData) => {
+ipcMain.handle('session:save-full', (_event: IpcMainInvokeEvent, sessionData: SessionData) => {
     saveFullSession(sessionData);
     return true;
 });
 
 // Save single tab content (for debounced auto-save)
-ipcMain.handle('session:save-tab', (event, tabData) => {
+ipcMain.handle('session:save-tab', (_event: IpcMainInvokeEvent, tabData: any) => {
     saveTabContent(tabData);
     return true;
 });
@@ -279,20 +297,20 @@ ipcMain.handle('settings:get', () => {
 });
 
 // Save settings
-ipcMain.handle('settings:save', (event, settings) => {
+ipcMain.handle('settings:save', (_event: IpcMainInvokeEvent, settings: EditorSettings) => {
     return saveSettings(settings);
 });
 
 // Create new document
-ipcMain.handle('file:new', (event, tabId) => {
+ipcMain.handle('file:new', (_event: IpcMainInvokeEvent, tabId: string) => {
     createTempDir(tabId);
     return createEmptyDocument();
 });
 
 // Open file dialog
-ipcMain.handle('file:open-dialog', async (event) => {
+ipcMain.handle('file:open-dialog', async (event: IpcMainInvokeEvent) => {
     const win = getWindowFromEvent(event);
-    const result = await dialog.showOpenDialog(win, {
+    const result = await dialog.showOpenDialog(win!, {
         filters: [{ name: 'TexImg Files', extensions: ['txti'] }],
         properties: ['openFile']
     });
@@ -305,31 +323,31 @@ ipcMain.handle('file:open-dialog', async (event) => {
 });
 
 // Open file (lazy - only content.json, no images)
-ipcMain.handle('file:open', async (event, filePath, tabId) => {
+ipcMain.handle('file:open', async (_event: IpcMainInvokeEvent, filePath: string, tabId: string) => {
     try {
         createTempDir(tabId);
         const { content, assetList } = await readContentJson(filePath);
         return { success: true, content, assetList, filePath };
-    } catch (err) {
+    } catch (err: any) {
         return { success: false, error: err.message };
     }
 });
 
 // Load images for active tab (extract to temp)
-ipcMain.handle('file:load-images', async (event, filePath, tabId) => {
+ipcMain.handle('file:load-images', async (_event: IpcMainInvokeEvent, filePath: string, tabId: string) => {
     try {
         const tempDir = tempDirs.get(tabId) || createTempDir(tabId);
         const imageMap = await extractImages(filePath, tempDir);
         return { success: true, imageMap };
-    } catch (err) {
+    } catch (err: any) {
         return { success: false, error: err.message };
     }
 });
 
 // Save file dialog
-ipcMain.handle('file:save-dialog', async (event, defaultName) => {
+ipcMain.handle('file:save-dialog', async (event: IpcMainInvokeEvent, defaultName: string) => {
     const win = getWindowFromEvent(event);
-    const result = await dialog.showSaveDialog(win, {
+    const result = await dialog.showSaveDialog(win!, {
         filters: [{ name: 'TexImg Files', extensions: ['txti'] }],
         defaultPath: defaultName || 'document.txti'
     });
@@ -342,19 +360,19 @@ ipcMain.handle('file:save-dialog', async (event, defaultName) => {
 });
 
 // Save file
-ipcMain.handle('file:save', async (event, { filePath, content, imageFiles }) => {
+ipcMain.handle('file:save', async (_event: IpcMainInvokeEvent, { filePath, content, imageFiles }: SaveFileParams) => {
     try {
         await createZip(content, imageFiles, filePath);
         return { success: true };
-    } catch (err) {
+    } catch (err: any) {
         return { success: false, error: err.message };
     }
 });
 
 // Save As dialog (always shows dialog)
-ipcMain.handle('file:save-as-dialog', async (event, currentPath) => {
+ipcMain.handle('file:save-as-dialog', async (event: IpcMainInvokeEvent, currentPath: string) => {
     const win = getWindowFromEvent(event);
-    const result = await dialog.showSaveDialog(win, {
+    const result = await dialog.showSaveDialog(win!, {
         filters: [{ name: 'TexImg Files', extensions: ['txti'] }],
         defaultPath: currentPath || 'document.txti'
     });
@@ -367,7 +385,7 @@ ipcMain.handle('file:save-as-dialog', async (event, currentPath) => {
 });
 
 // Handle clipboard image paste
-ipcMain.handle('clipboard:paste-image', (event, tabId, imageDataUrl) => {
+ipcMain.handle('clipboard:paste-image', (_event: IpcMainInvokeEvent, tabId: string, imageDataUrl: string) => {
     try {
         const tempDir = tempDirs.get(tabId) || createTempDir(tabId);
         const filename = `${uuidv4()}.png`;
@@ -378,7 +396,7 @@ ipcMain.handle('clipboard:paste-image', (event, tabId, imageDataUrl) => {
         fs.writeFileSync(filePath, buffer);
 
         return { success: true, filename, filePath };
-    } catch (err) {
+    } catch (err: any) {
         return { success: false, error: err.message };
     }
 });
@@ -393,7 +411,7 @@ ipcMain.handle('clipboard:read-image', () => {
 });
 
 // Save buffer to temp file
-ipcMain.handle('clipboard:save-buffer', (event, tabId, buffer) => {
+ipcMain.handle('clipboard:save-buffer', (_event: IpcMainInvokeEvent, tabId: string, buffer: Buffer) => {
     try {
         const tempDir = tempDirs.get(tabId) || createTempDir(tabId);
         const filename = `${uuidv4()}.png`;
@@ -402,28 +420,28 @@ ipcMain.handle('clipboard:save-buffer', (event, tabId, buffer) => {
         fs.writeFileSync(filePath, Buffer.from(buffer));
 
         return { success: true, filename, filePath };
-    } catch (err) {
+    } catch (err: any) {
         return { success: false, error: err.message };
     }
 });
 
 // Close tab - cleanup temp
-ipcMain.handle('tab:close', (event, tabId) => {
+ipcMain.handle('tab:close', (_event: IpcMainInvokeEvent, tabId: string) => {
     cleanupTempDir(tabId);
     return true;
 });
 
 // Get temp directory for a tab
-ipcMain.handle('tab:get-temp-dir', (event, tabId) => {
+ipcMain.handle('tab:get-temp-dir', (_event: IpcMainInvokeEvent, tabId: string) => {
     return tempDirs.get(tabId) || createTempDir(tabId);
 });
 
 // Read temp images as base64 for session persistence
-ipcMain.handle('tab:read-temp-images', (event, tabId, filenames) => {
+ipcMain.handle('tab:read-temp-images', (_event: IpcMainInvokeEvent, tabId: string, filenames: string[]) => {
     const tempDir = tempDirs.get(tabId);
     if (!tempDir) return {};
 
-    const imageData = {};
+    const imageData: Record<string, string> = {};
     for (const filename of filenames) {
         const filePath = path.join(tempDir, filename);
         if (fs.existsSync(filePath)) {
@@ -435,9 +453,9 @@ ipcMain.handle('tab:read-temp-images', (event, tabId, filenames) => {
 });
 
 // Restore temp images from base64 (session restore)
-ipcMain.handle('tab:restore-temp-images', (event, tabId, imageData) => {
+ipcMain.handle('tab:restore-temp-images', (_event: IpcMainInvokeEvent, tabId: string, imageData: Record<string, string>) => {
     const tempDir = tempDirs.get(tabId) || createTempDir(tabId);
-    const restoredPaths = {};
+    const restoredPaths: Record<string, string> = {};
 
     for (const [filename, base64] of Object.entries(imageData)) {
         const filePath = path.join(tempDir, filename);

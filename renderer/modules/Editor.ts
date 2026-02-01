@@ -1,34 +1,39 @@
 import { state } from './state.js';
-import { getFilename, truncateTabTitle } from './utils.js';
+import { truncateTabTitle } from './utils.js';
+import { TabState } from '../../types';
 
-let updateTabUI = () => { };
-let updateStatusBar = () => { };
+type UpdateFunction = (tabId: string) => void;
+type StatusBarFunction = () => void;
+type SaveSessionFunction = () => void;
 
-export function setUpdateTabUI(fn) {
+let updateTabUI: UpdateFunction = () => { };
+let updateStatusBar: StatusBarFunction = () => { };
+
+export function setUpdateTabUI(fn: UpdateFunction): void {
     updateTabUI = fn;
 }
 
-export function setUpdateStatusBar(fn) {
+export function setUpdateStatusBar(fn: StatusBarFunction): void {
     updateStatusBar = fn;
 }
 
-let debouncedSaveSession = () => { };
+let debouncedSaveSession: SaveSessionFunction = () => { };
 
-export function setDebouncedSaveSession(fn) {
+export function setDebouncedSaveSession(fn: SaveSessionFunction): void {
     debouncedSaveSession = fn;
 }
 
 // DOM Elements
-const editor = document.getElementById('editor');
+const editor = document.getElementById('editor') as HTMLDivElement;
 
 // Image resize state
-let selectedImage = null;
-let resizeHandle = null;
+let selectedImage: HTMLImageElement | null = null;
+let resizeHandle: HTMLDivElement | null = null;
 let isResizing = false;
 let resizeStartX = 0;
 let resizeStartWidth = 0;
 
-export function initEditor() {
+export function initEditor(): void {
     editor.addEventListener('paste', handlePaste);
     editor.addEventListener('keydown', handleEditorKeyDown);
 
@@ -40,7 +45,7 @@ export function initEditor() {
     });
 
     editor.addEventListener('keyup', updateStatusBar);
-    editor.addEventListener('click', (e) => {
+    editor.addEventListener('click', (e: MouseEvent) => {
         updateStatusBar();
         handleEditorClick(e);
     });
@@ -48,12 +53,11 @@ export function initEditor() {
 
     // Image interactions
     editor.addEventListener('click', handleImageClick);
-    document.getElementById('editor-container').addEventListener('scroll', updateHandlePosition);
+    (document.getElementById('editor-container') as HTMLDivElement).addEventListener('scroll', updateHandlePosition);
     window.addEventListener('resize', updateHandlePosition);
-
 }
 
-export function getEditorElement() {
+export function getEditorElement(): HTMLDivElement {
     return editor;
 }
 
@@ -61,14 +65,14 @@ export function getEditorElement() {
 // Content Management
 // ============================================
 
-export function renderContentToEditor(tabState) {
+export function renderContentToEditor(tabState: TabState): void {
     editor.innerHTML = '';
     deselectImage();
 
     for (const item of tabState.content) {
         if (item.type === 'text') {
             const p = document.createElement('p');
-            p.textContent = item.val;
+            p.textContent = item.val || '';
             editor.appendChild(p);
         } else if (item.type === 'img') {
             const img = document.createElement('img');
@@ -76,13 +80,13 @@ export function renderContentToEditor(tabState) {
 
             if (item.width) {
                 img.style.width = `${item.width}px`;
-                img.dataset.width = item.width;
+                img.dataset.width = item.width.toString();
             }
 
-            if (tabState.tempImages[item.src]) {
-                img.src = `file://${tabState.tempImages[item.src]}`;
-            } else if (tabState.imageMap[item.src]) {
-                img.src = `file://${tabState.imageMap[item.src]}`;
+            if (tabState.tempImages[item.src || '']) {
+                img.src = `file://${tabState.tempImages[item.src || '']}`;
+            } else if (tabState.imageMap[item.src || '']) {
+                img.src = `file://${tabState.imageMap[item.src || '']}`;
             } else {
                 img.classList.add('loading');
                 img.alt = `Loading: ${item.src}`;
@@ -93,46 +97,48 @@ export function renderContentToEditor(tabState) {
     }
 }
 
-export function saveEditorToState(tabId) {
+export function saveEditorToState(tabId: string): void {
     const tabState = state.tabs.get(tabId);
     if (!tabState) return;
 
-    const content = [];
+    const content: Array<{ type: 'text' | 'img'; val?: string; src?: string; width?: number }> = [];
     const children = editor.childNodes;
 
     for (const child of children) {
         if (child.nodeType === Node.TEXT_NODE) {
             const text = child.textContent;
-            if (text.trim()) {
+            if (text && text.trim()) {
                 content.push({ type: 'text', val: text });
             }
         } else if (child.nodeType === Node.ELEMENT_NODE) {
-            if (child.tagName === 'IMG') {
-                const filename = child.dataset.filename;
+            const element = child as HTMLElement;
+            if (element.tagName === 'IMG') {
+                const img = element as HTMLImageElement;
+                const filename = img.dataset.filename;
                 if (filename) {
-                    const imgItem = { type: 'img', src: filename };
-                    if (child.dataset.width) {
-                        imgItem.width = parseInt(child.dataset.width);
+                    const imgItem: { type: 'img'; src: string; width?: number } = { type: 'img', src: filename };
+                    if (img.dataset.width) {
+                        imgItem.width = parseInt(img.dataset.width);
                     }
                     content.push(imgItem);
                 }
-            } else if (child.tagName === 'DIV' || child.tagName === 'P') {
-                const text = child.textContent;
-                if (text.trim()) {
+            } else if (element.tagName === 'DIV' || element.tagName === 'P') {
+                const text = element.textContent;
+                if (text && text.trim()) {
                     content.push({ type: 'text', val: text });
                 }
-                const imgs = child.querySelectorAll('img');
+                const imgs = element.querySelectorAll('img');
                 for (const img of imgs) {
                     const filename = img.dataset.filename;
                     if (filename) {
-                        const imgItem = { type: 'img', src: filename };
+                        const imgItem: { type: 'img'; src: string; width?: number } = { type: 'img', src: filename };
                         if (img.dataset.width) {
                             imgItem.width = parseInt(img.dataset.width);
                         }
                         content.push(imgItem);
                     }
                 }
-            } else if (child.tagName === 'BR') {
+            } else if (element.tagName === 'BR') {
                 content.push({ type: 'text', val: '\n' });
             }
         }
@@ -141,11 +147,11 @@ export function saveEditorToState(tabId) {
     tabState.content = content;
 }
 
-export function markModified() {
-    const tabState = state.tabs.get(state.activeTabId);
+export function markModified(): void {
+    const tabState = state.tabs.get(state.activeTabId!);
     if (tabState && !tabState.modified) {
         tabState.modified = true;
-        updateTabUI(state.activeTabId);
+        updateTabUI(state.activeTabId!);
     }
 }
 
@@ -153,20 +159,22 @@ export function markModified() {
 // Image Logic
 // ============================================
 
-function handleImageClick(e) {
-    if (e.target.tagName === 'IMG' && e.target.closest('#editor')) {
+function handleImageClick(e: MouseEvent): void {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'IMG' && target.closest('#editor')) {
         e.stopPropagation();
-        selectImage(e.target);
+        selectImage(target as HTMLImageElement);
     }
 }
 
-function handleEditorClick(e) {
-    if (e.target.tagName !== 'IMG' && !e.target.classList.contains('resize-handle')) {
+function handleEditorClick(e: MouseEvent): void {
+    const target = e.target as HTMLElement;
+    if (target.tagName !== 'IMG' && !target.classList.contains('resize-handle')) {
         deselectImage();
     }
 }
 
-function selectImage(img) {
+function selectImage(img: HTMLImageElement): void {
     deselectImage();
 
     selectedImage = img;
@@ -175,11 +183,11 @@ function selectImage(img) {
     resizeHandle = document.createElement('div');
     resizeHandle.className = 'resize-handle';
     updateHandlePosition();
-    document.getElementById('editor-container').appendChild(resizeHandle);
+    (document.getElementById('editor-container') as HTMLDivElement).appendChild(resizeHandle);
     resizeHandle.addEventListener('mousedown', startResize);
 }
 
-export function deselectImage() {
+export function deselectImage(): void {
     if (selectedImage) {
         selectedImage.classList.remove('selected');
         selectedImage = null;
@@ -190,15 +198,15 @@ export function deselectImage() {
     }
 }
 
-function updateHandlePosition() {
+function updateHandlePosition(): void {
     if (!selectedImage || !resizeHandle) return;
     const imgRect = selectedImage.getBoundingClientRect();
-    const containerRect = document.getElementById('editor-container').getBoundingClientRect();
+    const containerRect = (document.getElementById('editor-container') as HTMLDivElement).getBoundingClientRect();
     resizeHandle.style.left = `${imgRect.right - containerRect.left - 6}px`;
     resizeHandle.style.top = `${imgRect.bottom - containerRect.top - 6}px`;
 }
 
-function startResize(e) {
+function startResize(e: MouseEvent): void {
     e.preventDefault();
     e.stopPropagation();
     if (!selectedImage) return;
@@ -211,20 +219,20 @@ function startResize(e) {
     document.addEventListener('mouseup', stopResize);
 }
 
-function doResize(e) {
+function doResize(e: MouseEvent): void {
     if (!isResizing || !selectedImage) return;
     const deltaX = e.clientX - resizeStartX;
     let newWidth = resizeStartWidth + deltaX;
-    const maxWidth = document.getElementById('editor-container').offsetWidth - 32;
+    const maxWidth = (document.getElementById('editor-container') as HTMLDivElement).offsetWidth - 32;
     newWidth = Math.max(50, Math.min(maxWidth, newWidth));
 
     selectedImage.style.width = `${newWidth}px`;
     selectedImage.style.height = 'auto';
-    selectedImage.dataset.width = newWidth;
+    selectedImage.dataset.width = newWidth.toString();
     updateHandlePosition();
 }
 
-function stopResize() {
+function stopResize(): void {
     if (isResizing) {
         isResizing = false;
         markModified();
@@ -233,13 +241,13 @@ function stopResize() {
     document.removeEventListener('mouseup', stopResize);
 }
 
-export function insertImage(filename, filePath) {
+export function insertImage(filename: string, filePath: string): void {
     const img = document.createElement('img');
     img.src = `file://${filePath}`;
     img.dataset.filename = filename;
 
     const selection = window.getSelection();
-    if (selection.rangeCount > 0) {
+    if (selection && selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);
         const wrapper = document.createElement('p');
         wrapper.appendChild(img);
@@ -260,7 +268,7 @@ export function insertImage(filename, filePath) {
 // Paste Logic
 // ============================================
 
-async function handlePaste(e) {
+async function handlePaste(e: ClipboardEvent): Promise<void> {
     const clipboardData = e.clipboardData;
     if (clipboardData && clipboardData.items) {
         for (const item of clipboardData.items) {
@@ -279,26 +287,28 @@ async function handlePaste(e) {
     }
 }
 
-async function handleImagePaste(item) {
-    const tabState = state.tabs.get(state.activeTabId);
+async function handleImagePaste(item: DataTransferItem): Promise<void> {
+    const tabState = state.tabs.get(state.activeTabId!);
     if (!tabState) return;
 
     const blob = item.getAsFile();
+    if (!blob) return;
+    
     const buffer = await blob.arrayBuffer();
-    const result = await window.teximg.saveClipboardBuffer(state.activeTabId, Array.from(new Uint8Array(buffer)));
+    const result = await window.teximg.saveClipboardBuffer(Array.from(new Uint8Array(buffer)) as any, state.activeTabId!);
 
-    if (result.success) {
+    if (result.success && result.filename && result.filePath) {
         insertImage(result.filename, result.filePath);
         tabState.tempImages[result.filename] = result.filePath;
         markModified();
     }
 }
 
-async function handleNativeImagePaste(buffer) {
-    const tabState = state.tabs.get(state.activeTabId);
+async function handleNativeImagePaste(buffer: any): Promise<void> {
+    const tabState = state.tabs.get(state.activeTabId!);
     if (!tabState) return;
-    const result = await window.teximg.saveClipboardBuffer(state.activeTabId, Array.from(buffer));
-    if (result.success) {
+    const result = await window.teximg.saveClipboardBuffer(Array.from(buffer) as any, state.activeTabId!);
+    if (result.success && result.filename && result.filePath) {
         insertImage(result.filename, result.filePath);
         tabState.tempImages[result.filename] = result.filePath;
         markModified();
@@ -309,11 +319,11 @@ async function handleNativeImagePaste(buffer) {
 // Auto Indent / Logic
 // ============================================
 
-function handleEditorKeyDown(e) {
+function handleEditorKeyDown(e: KeyboardEvent): void {
     if (e.key === 'Enter' && state.settings.autoIndent) {
         e.preventDefault();
         const selection = window.getSelection();
-        if (selection.rangeCount === 0) return;
+        if (!selection || selection.rangeCount === 0) return;
         const range = selection.getRangeAt(0);
         const preCaretRange = range.cloneRange();
         preCaretRange.selectNodeContents(editor);
@@ -337,10 +347,10 @@ function handleEditorKeyDown(e) {
     if (e.key === 'Tab') {
         e.preventDefault();
         const selection = window.getSelection();
-        if (selection.rangeCount === 0) return;
+        if (!selection || selection.rangeCount === 0) return;
         const range = selection.getRangeAt(0);
         range.deleteContents();
-        let tabText = state.settings.indentChar === 'tab' ? '\t' : ' '.repeat(state.settings.indentSize);
+        const tabText = state.settings.indentChar === 'tab' ? '\t' : ' '.repeat(state.settings.indentSize);
         const textNode = document.createTextNode(tabText);
         range.insertNode(textNode);
         range.setStartAfter(textNode);
@@ -351,14 +361,14 @@ function handleEditorKeyDown(e) {
     }
 }
 
-function getLineIndent(text) {
+function getLineIndent(text: string): string {
     const lines = text.split('\n');
     const currentLine = lines[lines.length - 1];
     const match = currentLine.match(/^[\t ]*/);
     return match ? match[0] : '';
 }
 
-function getNewlineChar() {
+function getNewlineChar(): string {
     switch (state.settings.lineFeed) {
         case 'CRLF': return '\r\n';
         case 'CR': return '\r';
@@ -370,14 +380,14 @@ function getNewlineChar() {
 // Title Updates
 // ============================================
 
-function getDisplayTitle(text) {
+function getDisplayTitle(text: string): string {
     if (!text || !text.trim()) return 'Untitled';
     const firstLine = text.split('\n')[0].trim();
     if (!firstLine) return 'Untitled';
     return firstLine.length > 255 ? firstLine.substring(0, 255) : firstLine;
 }
 
-function updateCurrentTabTitle() {
+function updateCurrentTabTitle(): void {
     if (!state.activeTabId) return;
     const tabState = state.tabs.get(state.activeTabId);
     if (!tabState) return;
@@ -394,10 +404,10 @@ function updateCurrentTabTitle() {
     }
 }
 
-export function undo() { document.execCommand('undo'); }
-export function redo() { document.execCommand('redo'); }
+export function undo(): void { document.execCommand('undo'); }
+export function redo(): void { document.execCommand('redo'); }
 
-export function setZoom(level) {
+export function setZoom(level: number): void {
     state.zoomLevel = Math.max(10, Math.min(500, level));
     editor.style.fontSize = `${15 * (state.zoomLevel / 100)}px`;
 }
