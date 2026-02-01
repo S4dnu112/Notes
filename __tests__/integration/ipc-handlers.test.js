@@ -30,9 +30,9 @@ jest.mock('electron', () => ({
 }));
 
 // Import modules after mocking
-const { readContentJson, extractImages, createZip } = require('../../dist/lib/zipHandler');
-const { getSettings, saveSettings } = require('../../dist/lib/settingsManager');
-const { getFullSession, saveFullSession } = require('../../dist/lib/sessionManager');
+const { readContentJson, extractImages, createZip } = require('../../dist/main/lib/zipHandler');
+const { getSettings, saveSettings } = require('../../dist/main/lib/settingsManager');
+const { getFullSession, saveFullSession } = require('../../dist/main/lib/sessionManager');
 
 describe('Integration: IPC Handlers', () => {
     const testDir = path.join(os.tmpdir(), 'integration-test');

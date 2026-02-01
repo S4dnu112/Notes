@@ -9,7 +9,7 @@ jest.mock('electron', () => ({
 }));
 
 // Import after mocking
-const { getSettings, saveSettings, DEFAULT_SETTINGS } = require('../../dist/lib/settingsManager');
+const { getSettings, saveSettings, DEFAULT_SETTINGS } = require('../../dist/main/lib/settingsManager');
 
 describe('settingsManager', () => {
     const testSettingsPath = '/tmp/test-userdata/settings.json';

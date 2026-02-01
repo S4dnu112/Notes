@@ -1,7 +1,7 @@
 import AdmZip = require('adm-zip');
 import { promises as fs } from 'fs';
 import * as path from 'path';
-import { Content, ZipContent, ExtractImagesResult, ImageMap } from '../types';
+import { Content, ZipContent, ExtractImagesResult, ImageMap } from '../../types/index';
 
 export async function readContentJson(filePath: string): Promise<ZipContent> {
     try {

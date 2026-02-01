@@ -15,7 +15,7 @@ const {
     getFullSession,
     saveFullSession,
     saveTabContent
-} = require('../../dist/lib/sessionManager');
+} = require('../../dist/main/lib/sessionManager');
 
 describe('sessionManager', () => {
     const testSessionPath = '/tmp/test-session/session.json';

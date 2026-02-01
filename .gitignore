@@ -5,6 +5,14 @@ node_modules/
 dist/
 out/
 build/
+*.js.map
+*.d.ts.map
+
+# Compiled JavaScript and TypeScript declarations from source
+main.js
+preload.js
+types.js
+types.d.ts
 
 # Test data
 txti-files/

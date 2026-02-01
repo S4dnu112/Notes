@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { app } from 'electron';
-import { SessionData, TabState } from '../types';
+import { SessionData, TabState } from '../../types/index';
 
 const SESSION_FILE = path.join(app.getPath('userData'), 'session.json');
 

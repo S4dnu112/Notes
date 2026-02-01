@@ -61,9 +61,9 @@ jest.mock('electron', () => ({
     }
 }));
 
-const { getSession, saveSession, getFullSession, saveFullSession, saveTabContent } = require('../../dist/lib/sessionManager');
-const { getSettings, saveSettings } = require('../../dist/lib/settingsManager');
-const { readContentJson, extractImages, createZip, createEmptyDocument } = require('../../dist/lib/zipHandler');
+const { getSession, saveSession, getFullSession, saveFullSession, saveTabContent } = require('../../dist/main/lib/sessionManager');
+const { getSettings, saveSettings } = require('../../dist/main/lib/settingsManager');
+const { readContentJson, extractImages, createZip, createEmptyDocument } = require('../../dist/main/lib/zipHandler');
 
 describe('Main Process - IPC Integration Tests', () => {
     let handlers;
@@ -103,7 +103,7 @@ describe('Main Process - IPC Integration Tests', () => {
         beforeEach(() => {
             // Load main.js to register handlers
             jest.isolateModules(() => {
-                require('../../main.js');
+                require('../../dist/main/main.js');
             });
         });
 
@@ -215,7 +215,7 @@ describe('Main Process - IPC Integration Tests', () => {
     describe('Settings Management IPC Handlers', () => {
         beforeEach(() => {
             jest.isolateModules(() => {
-                require('../../main.js');
+                require('../../dist/main/main.js');
             });
         });
 
@@ -274,7 +274,7 @@ describe('Main Process - IPC Integration Tests', () => {
 
         beforeEach(() => {
             jest.isolateModules(() => {
-                require('../../main.js');
+                require('../../dist/main/main.js');
             });
 
             testFile = path.join(testDir, 'test.txti');
@@ -387,7 +387,7 @@ describe('Main Process - IPC Integration Tests', () => {
 
         beforeEach(() => {
             jest.isolateModules(() => {
-                require('../../main.js');
+                require('../../dist/main/main.js');
             });
         });
 
@@ -494,7 +494,7 @@ describe('Main Process - IPC Integration Tests', () => {
 
         beforeEach(() => {
             jest.isolateModules(() => {
-                require('../../main.js');
+                require('../../dist/main/main.js');
             });
         });
 
@@ -549,7 +549,7 @@ describe('Main Process - IPC Integration Tests', () => {
     describe('Window Management IPC Handlers', () => {
         beforeEach(() => {
             jest.isolateModules(() => {
-                require('../../main.js');
+                require('../../dist/main/main.js');
             });
         });
 
@@ -580,7 +580,7 @@ describe('Main Process - IPC Integration Tests', () => {
     describe('Error Handling', () => {
         beforeEach(() => {
             jest.isolateModules(() => {
-                require('../../main.js');
+                require('../../dist/main/main.js');
             });
         });
 

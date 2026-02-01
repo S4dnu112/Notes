@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { readContentJson, extractImages, createZip, createEmptyDocument } from './lib/zipHandler';
 import { getSession, saveSession, getFullSession, saveFullSession, saveTabContent } from './lib/sessionManager';
 import { getSettings, saveSettings } from './lib/settingsManager';
-import { SessionData, EditorSettings } from './types';
+import { SessionData, EditorSettings } from '../types/index';
 
 interface WindowBounds {
     width: number;

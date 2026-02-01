@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { app } from 'electron';
-import { EditorSettings, LineFeed, IndentChar } from '../types';
+import { EditorSettings, LineFeed, IndentChar } from '../../types/index';
 
 const SETTINGS_FILE = path.join(app.getPath('userData'), 'settings.json');
 

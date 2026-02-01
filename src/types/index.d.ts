@@ -88,4 +88,4 @@ export interface ZipContent {
 export interface ExtractImagesResult {
     [originalName: string]: string;
 }
-//# sourceMappingURL=types.d.ts.map
+//# sourceMappingURL=index.d.ts.map

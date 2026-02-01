@@ -1,6 +1,6 @@
 // Global type definitions for renderer process
 
-import { Content, ImageMap, SessionData, TabState, EditorSettings } from '../types';
+import { Content, ImageMap, SessionData, TabState, EditorSettings } from '../types/index';
 
 interface TexImgAPI {
     // Window controls
