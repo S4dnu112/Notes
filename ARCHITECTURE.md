@@ -2,12 +2,13 @@
 
 ## Overview
 
-TexImg Editor is an Electron-based desktop application for editing `.txti` files - text documents with embedded images stored as ZIP archives. The application follows a clean separation of concerns with distinct main, preload, and renderer processes.
+TexImg Editor is an Electron-based desktop application for editing `.txti` files - text documents with embedded images stored as ZIP archives. The application follows a clean separation of concerns with distinct main, preload, and renderer processes, fully implemented in TypeScript.
 
 ## Technology Stack
 
 - **Runtime**: Electron 28.0
-- **Language**: JavaScript/TypeScript (migration in progress)
+- **Language**: TypeScript 5.9
+- **Build System**: TypeScript Compiler (tsc)
 - **File Format**: Custom `.txti` (ZIP with `content.json` + `assets/` folder)
 - **Dependencies**:
   - `adm-zip`: ZIP file handling
@@ -21,19 +22,19 @@ TexImg Editor is an Electron-based desktop application for editing `.txti` files
 ┌─────────────────────────────────────────────────────────────┐
 │                      Main Process (Node.js)                  │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │ main.js      │  │ IPC Handlers │  │ Window Mgmt  │      │
+│  │ main.ts      │  │ IPC Handlers │  │ Window Mgmt  │      │
 │  │              │  │              │  │              │      │
 │  └──────────────┘  └──────────────┘  └──────────────┘      │
 │  ┌──────────────────────────────────────────────────┐      │
 │  │ Core Libraries (lib/)                            │      │
-│  │  • zipHandler.js    - ZIP read/write            │      │
-│  │  • sessionManager.js - Session persistence      │      │
-│  │  • settingsManager.js - User preferences        │      │
+│  │  • zipHandler.ts     - ZIP read/write           │      │
+│  │  • sessionManager.ts - Session persistence      │      │
+│  │  • settingsManager.ts - User preferences        │      │
 │  └──────────────────────────────────────────────────┘      │
 └─────────────────────────────────────────────────────────────┘
                             │
                    ┌────────┴────────┐
-                   │   preload.js    │
+                   │   preload.ts    │
                    │  Context Bridge │
                    └────────┬────────┘
                             │
@@ -42,130 +43,174 @@ TexImg Editor is an Electron-based desktop application for editing `.txti` files
 │  ┌──────────────────────────────────────────────────┐      │
 │  │ renderer/                                        │      │
 │  │  ┌────────────────┐  ┌────────────────┐         │      │
-│  │  │ renderer.js    │  │ index.html     │         │      │
+│  │  │ renderer.ts    │  │ index.html     │         │      │
 │  │  │ (Entry point)  │  │ (UI Structure) │         │      │
 │  │  └────────────────┘  └────────────────┘         │      │
 │  │                                                  │      │
 │  │  modules/                                        │      │
 │  │  ┌────────────────────────────────────────┐     │      │
-│  │  │ • Editor.js        - Content editing   │     │      │
-│  │  │ • TabManager.js    - Multi-tab logic   │     │      │
-│  │  │ • UIManager.js     - Window controls   │     │      │
-│  │  │ • SettingsManager.js - UI settings     │     │      │
-│  │  │ • state.js         - Application state │     │      │
-│  │  │ • utils.js         - Helper functions  │     │      │
+│  │  │ • Editor.ts        - Content editing   │     │      │
+│  │  │ • TabManager.ts    - Multi-tab logic   │     │      │
+│  │  │ • UIManager.ts     - Window controls   │     │      │
+│  │  │ • SettingsManager.ts - UI settings     │     │      │
+│  │  │ • state.ts         - Application state │     │      │
+│  │  │ • utils.ts         - Helper functions  │     │      │
 │  │  └────────────────────────────────────────┘     │      │
+│  └──────────────────────────────────────────────────┘      │
+│  ┌──────────────────────────────────────────────────┐      │
+│  │ types/                                           │      │
+│  │  └── index.ts - Shared type definitions          │      │
 │  └──────────────────────────────────────────────────┘      │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ## Core Modules
 
-### Main Process (`main.js`)
+### Main Process (`src/main/main.ts`)
 
 **Responsibilities:**
 - Window lifecycle management
 - IPC handler registration
 - Temporary directory management for images
-- Native menu creation
+- Native menu creation (Electron `Menu.popup()`)
 - Session/settings persistence coordination
+- Window bounds persistence
 
 **Key Functions:**
-- `createWindow()` - Creates new browser window
+- `createWindow()` - Creates new browser window with saved bounds
 - `createTempDir(tabId)` - Per-tab temporary directories
 - `cleanupTempDir(tabId)` - Cleanup on tab close
+- `getWindowBounds()` / `saveWindowBounds()` - Window position persistence
 
-### Preload (`preload.js`)
+**Key Interfaces:**
+```typescript
+interface WindowBounds {
+    width: number;
+    height: number;
+    x?: number;
+    y?: number;
+}
+
+interface SaveFileParams {
+    filePath: string;
+    content: any[];
+    imageFiles: Record<string, string>;
+}
+```
+
+### Preload (`src/main/preload.ts`)
 
 **Responsibilities:**
 - Secure IPC channel exposure via Context Bridge
 - Type-safe API between renderer and main
 
 **Exposed API (`window.teximg`):**
-```javascript
+```typescript
 {
   // Window controls
-  minimize, maximize, forceClose, newWindow,
+  minimize, maximize, forceClose, newWindow, showMenu,
+  getWindowCount, isMaximized,
   
   // File operations
-  openDialog, openFile, saveFile, loadImages,
+  newFile, openDialog, openFile, saveDialog, saveAsDialog,
+  saveFile, loadImages,
   
   // Session management
   getSession, saveSession, getFullSession, saveFullSession,
+  saveTabContent,
   
   // Settings
   getSettings, saveSettings,
   
-  // Clipboard & temp management
-  readClipboardImage, saveClipboardBuffer,
-  readTempImages, restoreTempImages
+  // Dialogs
+  showUnsavedChangesDialog,
+  
+  // Tab management
+  closeTab, readTempImages, restoreTempImages,
+  
+  // Clipboard & images
+  readClipboardImage, saveClipboardBuffer, pasteImage,
+  
+  // Event listeners
+  onMaximizedChange, onMenuAction, onCloseRequest
 }
 ```
 
 ### Renderer Modules
 
-#### `renderer.js`
+#### `renderer.ts`
 - Application entry point
 - Module initialization orchestration
 - Session restoration on startup
+- Drag and drop file support
+- First window vs new window detection
 
-#### `modules/state.js`
+#### `modules/state.ts`
 - Centralized application state
 - Tab data structure
 - Settings cache
 
 **State Structure:**
-```javascript
-{
-  tabs: Map<string, TabState>,
-  tabOrder: string[],
-  activeTabId: string | null,
-  tabCounter: number,
-  settings: {
-    lineFeed: 'LF' | 'CRLF' | 'CR',
-    autoIndent: boolean,
-    indentChar: 'tab' | 'space',
-    tabSize: number,
-    indentSize: number,
-    wordWrap: boolean
-  },
-  zoomLevel: number
+```typescript
+interface AppStateExtended {
+    tabs: Map<string, TabState>;
+    tabOrder: string[];
+    tabHistory: string[];
+    activeTabId: string | null;
+    tabCounter: number;
+    menuOpen: boolean;
+    draggedTabId: string | null;
+    settings: EditorSettings;
+    zoomLevel: number;
 }
 ```
 
-**TabState Structure:**
-```javascript
-{
-  id: string,
-  filePath: string | null,
-  title: string,
-  modified: boolean,
-  imagesLoaded: boolean,
-  content: ContentItem[],
-  imageMap: Record<string, string>,    // saved images
-  tempImages: Record<string, string>   // unsaved images
+**TabState Structure (from `types/index.ts`):**
+```typescript
+interface TabState {
+    id: string;
+    filePath: string | null;
+    title: string;
+    modified: boolean;
+    content: Content;
+    imageMap: ImageMap;
+    tempImages: ImageMap;
+    imagesLoaded?: boolean;
+    tempImageData?: Record<string, string>;
 }
 ```
 
-#### `modules/Editor.js`
+#### `modules/Editor.ts`
 - ContentEditable management
-- Image insertion & resizing
+- Image insertion & resizing with drag handles
 - Paste handling (text + images)
 - Auto-indentation
 - Content serialization to state
+- Zoom control
 
 **Key Features:**
 - Direct DOM manipulation for performance
 - Lazy image loading
 - Clipboard image support
 - Undo/redo via `execCommand`
+- Dynamic tab title updates based on content
 
-#### `modules/TabManager.js`
+**Key Functions:**
+- `initEditor()` - Setup editor event handlers
+- `renderContentToEditor(tabState)` - Render content to DOM
+- `saveEditorToState(tabId)` - Serialize DOM to state
+- `insertImage(filename, filePath)` - Add image to editor
+- `handlePaste(e)` - Handle paste events
+- `undo()` / `redo()` - Document history
+- `setZoom(level)` - Editor zoom control
+
+#### `modules/TabManager.ts`
 - Tab lifecycle (create, close, switch)
 - Drag-and-drop tab reordering
 - File operations (open, save, save-as)
 - Session persistence
 - Welcome screen management
+- Tab scrolling into view
 
 **Tab Operations Flow:**
 ```
@@ -174,28 +219,62 @@ openFile → extractContent → createTab → loadImages (lazy)
 saveFile → saveEditorToState → createZip → IPC save
 ```
 
-#### `modules/UIManager.js`
+**Key Functions:**
+- `createTab(filePath, content)` - Create new tab
+- `closeTab(tabId)` - Close with unsaved changes check
+- `switchToTab(tabId)` - Switch active tab with lazy image loading
+- `openFile(filePath)` - Open .txti file
+- `saveFile()` / `saveFileAs()` - Save operations
+- `restoreSession()` - Restore from persisted session
+- `debouncedSaveSession()` - Auto-save session state
+
+#### `modules/UIManager.ts`
 - Window controls (minimize, maximize, close)
 - Keyboard shortcuts
-- Native menu integration
-- Status bar updates
+- Native menu integration via IPC
+- Status bar updates (line, column, zoom)
 - Close confirmation for unsaved tabs
+- Header path display
 
-#### `modules/SettingsManager.js`
+**Keyboard Shortcuts:**
+| Shortcut | Action |
+|----------|--------|
+| Ctrl+N | New Window |
+| Ctrl+T | New Tab |
+| Ctrl+O | Open File |
+| Ctrl+S | Save |
+| Ctrl+Shift+S | Save As |
+| Ctrl+W | Close Tab |
+| Ctrl+Z | Undo |
+| Ctrl+Shift+Z / Ctrl+Y | Redo |
+| Ctrl++/- | Zoom In/Out |
+| Ctrl+0 | Reset Zoom |
+| Ctrl+, | Settings |
+| Escape | Close Settings |
+
+#### `modules/SettingsManager.ts`
 - Settings UI panel
 - Real-time setting application
-- Debounced save to main process
+- Immediate save to main process
 
-#### `modules/utils.js`
+**Settings:**
+- Line Feed (LF, CRLF, CR)
+- Word Wrap
+- Auto Indent
+- Indent Character (tab/space)
+- Tab Size (1-16)
+- Indent Size (1-16)
+
+#### `modules/utils.ts`
 - `generateTabId()` - Unique tab identifiers
 - `getFilename()` - Path parsing
 - `formatDirectoryPath()` - Breadcrumb display
-- `truncateTabTitle()` - Tab title length management
+- `truncateTabTitle()` - Tab title length management (max 15 chars)
 - `debounce()` - Function throttling
 
-### Core Libraries (`lib/`)
+### Core Libraries (`src/main/lib/`)
 
-#### `zipHandler.js`
+#### `zipHandler.ts`
 Handles `.txti` file format operations.
 
 **Functions:**
@@ -224,7 +303,7 @@ document.txti (ZIP)
 }
 ```
 
-#### `sessionManager.js`
+#### `sessionManager.ts`
 Persists open tabs and window state across restarts.
 
 **Functions:**
@@ -233,16 +312,49 @@ Persists open tabs and window state across restarts.
 - `saveFullSession(sessionData)` - Save all tab data
 - `saveTabContent(tabData)` - Incremental tab updates
 
-**Storage:** `~/.config/txti-editor/session.json`
+**Storage:** `~/.config/teximg-editor/session.json`
 
-#### `settingsManager.js`
+#### `settingsManager.ts`
 User preferences persistence.
 
 **Functions:**
 - `getSettings()` - Load with defaults fallback
-- `saveSettings(settings)` - Write to disk
+- `saveSettings(settings)` - Write to disk (merged with existing)
 
-**Storage:** `~/.config/txti-editor/settings.json`
+**Default Settings:**
+```typescript
+{
+    lineFeed: 'LF',
+    autoIndent: true,
+    indentChar: 'tab',
+    tabSize: 8,
+    indentSize: 8,
+    wordWrap: true
+}
+```
+
+**Storage:** `~/.config/teximg-editor/settings.json`
+
+### Type Definitions (`src/types/index.ts`)
+
+Centralized TypeScript interfaces and types:
+
+```typescript
+// Content types
+ContentItem, Content, TempImageEntry, ImageMap
+
+// State types
+TabState, SessionData, AppState
+
+// Settings types
+Settings, EditorSettings, LineFeed, IndentChar
+
+// IPC types
+SaveFileOptions, LoadFileResult, SaveFileResult, IpcResult<T>
+
+// Zip types
+ZipContent, ExtractImagesResult
+```
 
 ## Data Flow
 
@@ -289,14 +401,15 @@ User presses Ctrl+S
 Editor marks modified
   → debouncedSaveSession() (500ms delay)
   → saveEditorToState()
-  → saveFullSession() via IPC
+  → saveTabContent() via IPC
   → sessionManager writes to disk
 ```
 
 **On app start:**
 ```
-renderer.js initialization
-  → restoreSession()
+renderer.ts initialization
+  → Check isFirstWindow URL param
+  → If first window: restoreSession()
   → getFullSession() via IPC
   → For each saved tab:
       - Create TabState
@@ -341,6 +454,11 @@ Sync points:
 - Main process: IPC handlers
 - Renderer: Event listeners + callbacks
 - No tight coupling between modules
+
+### 6. Native Menu Integration
+- Hamburger button triggers `Menu.popup()` via IPC
+- Menu actions sent back to renderer via `menu:action` event
+- Provides native OS look and feel
 
 ## Performance Considerations
 
@@ -388,10 +506,10 @@ Sync points:
 - Fast execution (~2s)
 
 **Coverage:**
-- `zipHandler.js` - ZIP operations
-- `sessionManager.js` - Session persistence
-- `settingsManager.js` - Settings I/O
-- `utils.js` - Helper functions
+- `zipHandler.ts` - ZIP operations
+- `sessionManager.ts` - Session persistence
+- `settingsManager.ts` - Settings I/O
+- `utils.ts` - Helper functions
 
 ### Integration Tests (`__tests__/integration/`)
 - Multi-module workflows
@@ -404,26 +522,23 @@ Sync points:
 - Multi-tab management
 - Settings persistence
 
-### Component Tests (`__tests__/component/`) [Currently disabled due to ESM issues]
+### Component Tests (`__tests__/component/`)
 - DOM manipulation testing
 - UI interaction validation
-- Will be re-enabled after TypeScript migration
 
 ### E2E Tests (`__tests__/e2e/`)
 - Full application flows via Playwright
 - Real Electron window testing
 - User interaction simulation
 
-**Test Files:**
-- `basic-functionality.spec.js` - Core features
-- `file-operations.spec.js` - Open/save workflows
-- `tab-management.spec.js` - Multi-tab scenarios
-- `settings.spec.js` - Settings persistence
-
 ### Test Commands
 ```bash
 npm test              # Unit + integration
+npm run test:unit     # Unit tests only
+npm run test:integration  # Integration tests
+npm run test:component    # Component tests
 npm run test:e2e      # Playwright E2E
+npm run test:all      # All tests including E2E
 npm run test:coverage # Coverage report
 npm run test:watch    # Watch mode
 ```
@@ -433,65 +548,69 @@ npm run test:watch    # Watch mode
 ### Project Structure
 ```
 teximg-editor/
-├── main.js                  # Main process entry
-├── preload.js              # Context bridge
-├── package.json            # Dependencies & scripts
-├── tsconfig.json           # TypeScript config
-├── jest.config.js          # Test configuration
-├── playwright.config.js    # E2E test config
-│
-├── lib/                    # Core libraries (Node.js)
-│   ├── zipHandler.js
-│   ├── sessionManager.js
-│   └── settingsManager.js
-│
-├── renderer/               # Browser process
-│   ├── index.html
-│   ├── style.css
-│   ├── renderer.js
-│   └── modules/
-│       ├── Editor.js
-│       ├── TabManager.js
-│       ├── UIManager.js
-│       ├── SettingsManager.js
-│       ├── state.js
-│       └── utils.js
-│
-└── __tests__/              # Test suites
-    ├── lib/                # Library unit tests
-    ├── renderer/           # Renderer unit tests
-    ├── integration/        # Integration tests
-    ├── component/          # Component tests
-    └── e2e/                # End-to-end tests
+├── src/                        # Source files (TypeScript)
+│   ├── main/                   # Main process
+│   │   ├── main.ts            # Entry point
+│   │   ├── preload.ts         # Context bridge
+│   │   └── lib/               # Core libraries
+│   │       ├── zipHandler.ts
+│   │       ├── sessionManager.ts
+│   │       └── settingsManager.ts
+│   ├── renderer/               # Browser process
+│   │   ├── index.html
+│   │   ├── style.css
+│   │   ├── renderer.ts
+│   │   ├── global.d.ts        # Window.teximg types
+│   │   └── modules/
+│   │       ├── Editor.ts
+│   │       ├── TabManager.ts
+│   │       ├── UIManager.ts
+│   │       ├── SettingsManager.ts
+│   │       ├── state.ts
+│   │       └── utils.ts
+│   └── types/                  # Shared type definitions
+│       └── index.ts
+├── dist/                       # Compiled output
+│   ├── main/
+│   └── renderer/
+├── __tests__/                  # Test suites
+│   ├── lib/                   # Library unit tests
+│   ├── renderer/              # Renderer unit tests
+│   ├── integration/           # Integration tests
+│   ├── component/             # Component tests
+│   └── e2e/                   # End-to-end tests
+├── package.json               # Dependencies & scripts
+├── tsconfig.json              # Main process TS config
+├── tsconfig.renderer.json     # Renderer process TS config
+├── jest.config.js             # Test configuration
+└── playwright.config.js       # E2E test config
 ```
 
 ### Development Workflow
 ```bash
-npm run build       # Compile TypeScript
-npm run dev         # Build + start Electron
-npm run start       # Production start
+npm run build       # Compile TypeScript (both main & renderer)
+npm run build:main  # Compile main process only
+npm run build:renderer  # Compile renderer only
+npm run start       # Build + start Electron
+npm run run         # Start without building (uses compiled)
 npm test            # Run tests
 ```
 
-### TypeScript Migration (In Progress)
-- Target: Full TypeScript conversion
-- Strategy: Gradual module-by-module migration
-- Current: Type definitions in `types.ts`
-- Benefits: Better IntelliSense, type safety, refactoring confidence
+### TypeScript Configuration
 
-## Future Enhancements
+**Main Process (`tsconfig.json`):**
+- Target: ES2022
+- Module: CommonJS
+- Output: `dist/main/`
 
-### Planned Features
-- [ ] Collaborative editing (WebRTC/WebSocket)
-- [ ] Plugin system for extensibility
-- [ ] Markdown export
-- [ ] Cloud sync (optional)
-- [ ] Mobile companion app
-- [ ] Theme customization
+**Renderer Process (`tsconfig.renderer.json`):**
+- Target: ES2022
+- Module: ES2022
+- Output: `dist/renderer/`
+- DOM lib included
+
 
 ### Technical Debt
-- Complete TypeScript migration
-- Fix component tests (ESM issues)
 - Add more E2E test coverage
 - Implement proper logger (replace console.*)
 - Add telemetry/crash reporting (opt-in)
@@ -499,7 +618,7 @@ npm test            # Run tests
 ## Contributing
 
 ### Code Style
-- ES6+ JavaScript/TypeScript
+- TypeScript with strict typing
 - Functional approach where possible
 - Clear variable naming
 - Comments for complex logic
@@ -521,6 +640,6 @@ MIT License - See [LICENSE](LICENSE) file for details.
 
 ---
 
-**Last Updated:** 2026-01-XX
+**Last Updated:** 2026-02-02
 **Version:** 1.0.0
 **Maintainer:** Reymel Sardenia
