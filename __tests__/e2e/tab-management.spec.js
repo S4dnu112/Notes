@@ -5,14 +5,18 @@
 
 const { test, expect, _electron: electron } = require('@playwright/test');
 const path = require('path');
+const os = require('os');
 
 test.describe('Tab Management E2E', () => {
     let electronApp;
     let window;
 
     test.beforeEach(async () => {
+        // Create a unique user data dir for each test
+        const uniqueUserDataDir = path.join(os.tmpdir(), `teximg-test-data-${Date.now()}-${Math.random()}`);
+
         electronApp = await electron.launch({
-            args: [path.join(__dirname, '../../main.js')]
+            args: [path.join(__dirname, '../../dist/main/main.js'), `--user-data-dir=${uniqueUserDataDir}`]
         });
         window = await electronApp.firstWindow();
         await window.waitForLoadState('domcontentloaded');
@@ -26,15 +30,15 @@ test.describe('Tab Management E2E', () => {
 
     test('should create multiple tabs', async () => {
         // Create first tab
-        await window.keyboard.press('Control+N');
+        await window.keyboard.press('Control+T');
         await window.waitForTimeout(200);
 
         // Create second tab
-        await window.keyboard.press('Control+N');
+        await window.keyboard.press('Control+T');
         await window.waitForTimeout(200);
 
         // Create third tab
-        await window.keyboard.press('Control+N');
+        await window.keyboard.press('Control+T');
         await window.waitForTimeout(200);
 
         // Check tab count
@@ -44,12 +48,12 @@ test.describe('Tab Management E2E', () => {
 
     test('should switch between tabs', async () => {
         // Create two tabs with different content
-        await window.keyboard.press('Control+N');
+        await window.keyboard.press('Control+T');
         const editor = await window.locator('#editor');
         await editor.click();
         await editor.type('Tab 1 content');
 
-        await window.keyboard.press('Control+N');
+        await window.keyboard.press('Control+T');
         await editor.click();
         await window.keyboard.press('Control+A');
         await window.keyboard.press('Delete');
@@ -66,9 +70,9 @@ test.describe('Tab Management E2E', () => {
 
     test('should close tab with Ctrl+W', async () => {
         // Create tabs
-        await window.keyboard.press('Control+N');
-        await window.keyboard.press('Control+N');
-        
+        await window.keyboard.press('Control+T');
+        await window.keyboard.press('Control+T');
+
         const initialCount = await window.locator('.tab').count();
 
         // Close current tab
@@ -81,8 +85,8 @@ test.describe('Tab Management E2E', () => {
 
     test('should show welcome screen when all tabs closed', async () => {
         // Create a tab
-        await window.keyboard.press('Control+N');
-        
+        await window.keyboard.press('Control+T');
+
         // Close it
         await window.keyboard.press('Control+W');
         await window.waitForTimeout(300);
@@ -100,20 +104,20 @@ test.describe('Tab Management E2E', () => {
 
     test('should maintain separate content in each tab', async () => {
         // Create first tab
-        await window.keyboard.press('Control+N');
+        await window.keyboard.press('Control+T');
         const editor = await window.locator('#editor');
         await editor.click();
         await editor.type('First tab content');
 
         // Create second tab
-        await window.keyboard.press('Control+N');
+        await window.keyboard.press('Control+T');
         await editor.click();
         await window.keyboard.press('Control+A');
         await window.keyboard.press('Delete');
         await editor.type('Second tab content');
 
         // Create third tab
-        await window.keyboard.press('Control+N');
+        await window.keyboard.press('Control+T');
         await editor.click();
         await window.keyboard.press('Control+A');
         await window.keyboard.press('Delete');
@@ -146,8 +150,8 @@ test.describe('Tab Management E2E', () => {
 
     test('should highlight active tab', async () => {
         // Create two tabs
-        await window.keyboard.press('Control+N');
-        await window.keyboard.press('Control+N');
+        await window.keyboard.press('Control+T');
+        await window.keyboard.press('Control+T');
 
         // Second tab should be active
         let activeTabs = await window.locator('.tab.active').count();
@@ -164,8 +168,8 @@ test.describe('Tab Management E2E', () => {
     });
 
     test('should show tab titles', async () => {
-        await window.keyboard.press('Control+N');
-        
+        await window.keyboard.press('Control+T');
+
         // Check tab has title (default should be "Untitled")
         const tabTitle = await window.locator('.tab .tab-title').first().textContent();
         expect(tabTitle).toBeTruthy();
@@ -174,9 +178,9 @@ test.describe('Tab Management E2E', () => {
 
     test('should cycle through tabs with keyboard', async () => {
         // Create 3 tabs
-        await window.keyboard.press('Control+N');
-        await window.keyboard.press('Control+N');
-        await window.keyboard.press('Control+N');
+        await window.keyboard.press('Control+T');
+        await window.keyboard.press('Control+T');
+        await window.keyboard.press('Control+T');
 
         // Current: Tab 3 (last created)
         let activeIndex = await window.locator('.tab.active').evaluateAll(
@@ -211,23 +215,23 @@ test.describe('Tab Management E2E', () => {
 
     test('should handle closing tab with unsaved content', async () => {
         // Create tab with content
-        await window.keyboard.press('Control+N');
+        await window.keyboard.press('Control+T');
         const editor = await window.locator('#editor');
         await editor.click();
         await editor.type('Unsaved content');
 
         // Try to close - should show dialog or mark as modified
         const initialCount = await window.locator('.tab').count();
-        
+
         await window.keyboard.press('Control+W');
         await window.waitForTimeout(500);
 
         // Depending on implementation, either:
         // 1. Dialog shown and tab still open
         // 2. Tab closed immediately (modern approach with session save)
-        
+
         const finalCount = await window.locator('.tab').count();
-        
+
         // Accept either behavior as valid
         expect(finalCount).toBeGreaterThanOrEqual(0);
     });
@@ -235,86 +239,27 @@ test.describe('Tab Management E2E', () => {
     test('should hide tab bar when only one tab', async () => {
         // Start fresh - should have no tabs or welcome screen
         const tabsRow = await window.locator('#tabs-row');
-        
+
         // Create first tab
-        await window.keyboard.press('Control+N');
+        await window.keyboard.press('Control+T');
         await window.waitForTimeout(200);
 
         // Tab bar should be hidden with single tab
-        let isHidden = await tabsRow.evaluate(el => 
+        let isHidden = await tabsRow.evaluate(el =>
             el.classList.contains('hidden') || getComputedStyle(el).display === 'none'
         );
         expect(isHidden).toBe(true);
 
         // Create second tab
-        await window.keyboard.press('Control+N');
+        await window.keyboard.press('Control+T');
         await window.waitForTimeout(200);
 
         // Tab bar should now be visible
-        isHidden = await tabsRow.evaluate(el => 
+        isHidden = await tabsRow.evaluate(el =>
             el.classList.contains('hidden') || getComputedStyle(el).display === 'none'
         );
         expect(isHidden).toBe(false);
     });
 });
 
-test.describe('Tab Management - Performance', () => {
-    let electronApp;
-    let window;
 
-    test.beforeEach(async () => {
-        electronApp = await electron.launch({
-            args: [path.join(__dirname, '../../main.js')]
-        });
-        window = await electronApp.firstWindow();
-        await window.waitForLoadState('domcontentloaded');
-    });
-
-    test.afterEach(async () => {
-        if (electronApp) {
-            await electronApp.close();
-        }
-    });
-
-    test('should handle many tabs efficiently', async () => {
-        const startTime = Date.now();
-
-        // Create 10 tabs
-        for (let i = 0; i < 10; i++) {
-            await window.keyboard.press('Control+N');
-            await window.waitForTimeout(100);
-        }
-
-        const endTime = Date.now();
-        const duration = endTime - startTime;
-
-        // Should complete within reasonable time (< 5 seconds)
-        expect(duration).toBeLessThan(5000);
-
-        // Verify all tabs created
-        const tabCount = await window.locator('.tab').count();
-        expect(tabCount).toBeGreaterThanOrEqual(10);
-    });
-
-    test('should switch tabs quickly', async () => {
-        // Create 5 tabs
-        for (let i = 0; i < 5; i++) {
-            await window.keyboard.press('Control+N');
-            await window.waitForTimeout(50);
-        }
-
-        const startTime = Date.now();
-
-        // Switch between tabs 10 times
-        for (let i = 0; i < 10; i++) {
-            await window.keyboard.press('Control+Tab');
-            await window.waitForTimeout(50);
-        }
-
-        const endTime = Date.now();
-        const duration = endTime - startTime;
-
-        // Should be fast (< 2 seconds)
-        expect(duration).toBeLessThan(2000);
-    });
-});

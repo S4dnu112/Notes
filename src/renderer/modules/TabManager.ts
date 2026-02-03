@@ -99,7 +99,7 @@ export async function switchToTab(tabId: string): Promise<void> {
 
     // Update activeTabId BEFORE updating UI
     state.activeTabId = tabId;
-    
+
     // Now update both tabs' UI (old will lose active, new will gain active)
     if (oldTabId) {
         updateTabUI(oldTabId);
@@ -132,6 +132,26 @@ export async function switchToTab(tabId: string): Promise<void> {
 
     // Save session
     saveSessionState();
+}
+
+export function switchToNextTab(): void {
+    if (state.tabOrder.length <= 1) return;
+
+    const currentIndex = state.activeTabId ? state.tabOrder.indexOf(state.activeTabId) : -1;
+    if (currentIndex === -1) return;
+
+    const nextIndex = (currentIndex + 1) % state.tabOrder.length;
+    switchToTab(state.tabOrder[nextIndex]);
+}
+
+export function switchToPreviousTab(): void {
+    if (state.tabOrder.length <= 1) return;
+
+    const currentIndex = state.activeTabId ? state.tabOrder.indexOf(state.activeTabId) : -1;
+    if (currentIndex === -1) return;
+
+    const prevIndex = (currentIndex - 1 + state.tabOrder.length) % state.tabOrder.length;
+    switchToTab(state.tabOrder[prevIndex]);
 }
 
 // ============================================
@@ -496,7 +516,7 @@ export async function restoreSession(): Promise<void> {
     if (activeId) {
         await switchToTab(activeId);
     }
-    
+
     updateTabsVisibility();
 }
 

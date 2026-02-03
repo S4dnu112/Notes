@@ -9,6 +9,8 @@ interface TabManagerFuncs {
     saveFile: () => Promise<void>;
     saveFileAs: () => Promise<void>;
     closeTab: (tabId: string) => Promise<void>;
+    switchToNextTab: () => void;
+    switchToPreviousTab: () => void;
 }
 
 // Close any open menus (settings panel, etc.)
@@ -20,7 +22,7 @@ export function closeMenu(): void {
 }
 
 export function initUI(tabManagerFuncs: TabManagerFuncs): void {
-    const { createTab, openFile, saveFile, saveFileAs, closeTab } = tabManagerFuncs;
+    const { createTab, openFile, saveFile, saveFileAs, closeTab, switchToNextTab, switchToPreviousTab } = tabManagerFuncs;
 
     // Window controls
     (document.getElementById('btn-minimize') as HTMLButtonElement).addEventListener('click', () => window.teximg.minimize());
@@ -61,7 +63,7 @@ export function initUI(tabManagerFuncs: TabManagerFuncs): void {
     (document.getElementById('btn-add-tab') as HTMLButtonElement).addEventListener('click', () => createTab());
 
     // Keyboard shortcuts
-    setupKeyboardShortcuts({ createTab, openFile, saveFile, saveFileAs, closeTab, openSettings, undo, redo });
+    setupKeyboardShortcuts({ createTab, openFile, saveFile, saveFileAs, closeTab, switchToNextTab, switchToPreviousTab, openSettings, undo, redo });
 }
 
 export function updateStatusBar(): void {
@@ -116,12 +118,14 @@ interface KeyboardShortcutHandlers {
     saveFile: () => Promise<void>;
     saveFileAs: () => Promise<void>;
     closeTab: (tabId: string) => Promise<void>;
+    switchToNextTab: () => void;
+    switchToPreviousTab: () => void;
     openSettings: () => void;
     undo: () => void;
     redo: () => void;
 }
 
-function setupKeyboardShortcuts({ createTab, openFile, saveFile, saveFileAs, closeTab, openSettings, undo, redo }: KeyboardShortcutHandlers): void {
+function setupKeyboardShortcuts({ createTab, openFile, saveFile, saveFileAs, closeTab, switchToNextTab, switchToPreviousTab, openSettings, undo, redo }: KeyboardShortcutHandlers): void {
     document.addEventListener('keydown', (e: KeyboardEvent) => {
         if (e.ctrlKey || e.metaKey) {
             switch (e.key.toLowerCase()) {
@@ -142,6 +146,10 @@ function setupKeyboardShortcuts({ createTab, openFile, saveFile, saveFileAs, clo
                 case '0': e.preventDefault(); setZoom(100); break;
                 case 'y': e.preventDefault(); redo(); break;
                 case ',': e.preventDefault(); openSettings(); break;
+                case 'tab':
+                    e.preventDefault();
+                    if (e.shiftKey) switchToPreviousTab(); else switchToNextTab();
+                    break;
             }
         }
         if (e.key === 'Escape') {

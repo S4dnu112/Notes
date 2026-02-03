@@ -17,9 +17,11 @@ interface WindowBounds {
 }
 
 interface SaveFileParams {
+    tabId: string;
     filePath: string;
     content: any[];
-    imageFiles: Record<string, string>;
+    imageMap: Record<string, string>;
+    tempImages: Record<string, string>;
 }
 
 interface CloseRequestContext {
@@ -360,9 +362,11 @@ ipcMain.handle('file:save-dialog', async (event: IpcMainInvokeEvent, defaultName
 });
 
 // Save file
-ipcMain.handle('file:save', async (_event: IpcMainInvokeEvent, { filePath, content, imageFiles }: SaveFileParams) => {
+ipcMain.handle('file:save', async (_event: IpcMainInvokeEvent, { filePath, content, imageMap, tempImages }: SaveFileParams) => {
     try {
-        await createZip(content, imageFiles, filePath);
+        // Merge imageMap (existing images) and tempImages (newly added) for saving
+        const allImages = { ...imageMap, ...tempImages };
+        await createZip(content, allImages, filePath);
         return { success: true };
     } catch (err: any) {
         return { success: false, error: err.message };

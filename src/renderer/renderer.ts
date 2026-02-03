@@ -1,7 +1,7 @@
 import { initEditor, setUpdateTabUI, setUpdateStatusBar, setDebouncedSaveSession } from './modules/Editor.js';
 import { initSettings, loadSettings } from './modules/SettingsManager.js';
 import { initUI, updateStatusBar } from './modules/UIManager.js';
-import { createTab, openFile, saveFile, saveFileAs, closeTab, restoreSession, updateTabUI, debouncedSaveSession, saveFullSessionState } from './modules/TabManager.js';
+import { createTab, openFile, saveFile, saveFileAs, closeTab, restoreSession, updateTabUI, debouncedSaveSession, saveFullSessionState, switchToNextTab, switchToPreviousTab } from './modules/TabManager.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -19,7 +19,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             openFile,
             saveFile,
             saveFileAs,
-            closeTab
+            closeTab,
+            switchToNextTab,
+            switchToPreviousTab
         });
 
         // Check if this is the first window (should restore session) or a new window (fresh)

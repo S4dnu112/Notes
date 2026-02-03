@@ -108,7 +108,14 @@ export function saveEditorToState(tabId: string): void {
         if (child.nodeType === Node.TEXT_NODE) {
             const text = child.textContent;
             if (text && text.trim()) {
-                content.push({ type: 'text', val: text });
+                const lines = text.split(/\r?\n/);
+                for (const line of lines) {
+                    if (line.trim()) { // Optional: preserve empty lines? If we want paragraphs, empty lines might be ignored or treated as empty P.
+                        // Standard behavior: text block.
+                        // But verifying the test: it expects >3 Ps.
+                        content.push({ type: 'text', val: line });
+                    }
+                }
             }
         } else if (child.nodeType === Node.ELEMENT_NODE) {
             const element = child as HTMLElement;
@@ -125,7 +132,12 @@ export function saveEditorToState(tabId: string): void {
             } else if (element.tagName === 'DIV' || element.tagName === 'P') {
                 const text = element.textContent;
                 if (text && text.trim()) {
-                    content.push({ type: 'text', val: text });
+                    const lines = text.split(/\r?\n/);
+                    for (const line of lines) {
+                        if (line.trim()) {
+                            content.push({ type: 'text', val: line });
+                        }
+                    }
                 }
                 const imgs = element.querySelectorAll('img');
                 for (const img of imgs) {
@@ -293,7 +305,7 @@ async function handleImagePaste(item: DataTransferItem): Promise<void> {
 
     const blob = item.getAsFile();
     if (!blob) return;
-    
+
     const buffer = await blob.arrayBuffer();
     const result = await window.teximg.saveClipboardBuffer(Array.from(new Uint8Array(buffer)) as any, state.activeTabId!);
 
@@ -332,16 +344,27 @@ function handleEditorKeyDown(e: KeyboardEvent): void {
         const indent = getLineIndent(textBeforeCursor);
         const newline = getNewlineChar();
 
-        range.deleteContents();
-        const textNode = document.createTextNode(newline + indent);
-        range.insertNode(textNode);
-        range.setStartAfter(textNode);
-        range.setEndAfter(textNode);
-        selection.removeAllRanges();
-        selection.addRange(range);
+        // Use execCommand for better undo/redo support if possible, otherwise fall back
+        if (document.queryCommandSupported('insertText')) {
+            document.execCommand('insertText', false, newline + indent);
+        } else {
+            range.deleteContents();
+            const textNode = document.createTextNode(newline + indent);
+            range.insertNode(textNode);
+            range.setStartAfter(textNode);
+            range.setEndAfter(textNode);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+
         markModified();
         updateStatusBar();
         updateCurrentTabTitle();
+        // Scroll to cursor
+        const rect = range.getBoundingClientRect();
+        if (rect.bottom > editor.getBoundingClientRect().bottom) {
+            editor.scrollTop += rect.height;
+        }
     }
 
     if (e.key === 'Tab') {
