@@ -16,6 +16,7 @@ export interface TabState {
     id: string;
     filePath: string | null;
     title: string;
+    fullTitle?: string;
     modified: boolean;
     content: Content;
     imageMap: ImageMap;

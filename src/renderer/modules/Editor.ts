@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { truncateTabTitle } from './utils.js';
+import { truncateTabTitle, formatHeaderText, getDisplayTitle } from './utils.js';
 import { TabState } from '../../types';
 
 type UpdateFunction = (tabId: string) => void;
@@ -8,6 +8,7 @@ type SaveSessionFunction = () => void;
 
 let updateTabUI: UpdateFunction = () => { };
 let updateStatusBar: StatusBarFunction = () => { };
+let updateHeaderPath: (text: string) => void = () => { };
 
 export function setUpdateTabUI(fn: UpdateFunction): void {
     updateTabUI = fn;
@@ -15,6 +16,10 @@ export function setUpdateTabUI(fn: UpdateFunction): void {
 
 export function setUpdateStatusBar(fn: StatusBarFunction): void {
     updateStatusBar = fn;
+}
+
+export function setUpdateHeaderPath(fn: (text: string) => void): void {
+    updateHeaderPath = fn;
 }
 
 let debouncedSaveSession: SaveSessionFunction = () => { };
@@ -164,6 +169,7 @@ export function markModified(): void {
     if (tabState && !tabState.modified) {
         tabState.modified = true;
         updateTabUI(state.activeTabId!);
+        updateHeaderPath(formatHeaderText(tabState.filePath, tabState.fullTitle || tabState.title, true));
     }
 }
 
@@ -403,12 +409,7 @@ function getNewlineChar(): string {
 // Title Updates
 // ============================================
 
-function getDisplayTitle(text: string): string {
-    if (!text || !text.trim()) return 'Untitled';
-    const firstLine = text.split('\n')[0].trim();
-    if (!firstLine) return 'Untitled';
-    return firstLine.length > 255 ? firstLine.substring(0, 255) : firstLine;
-}
+
 
 function updateCurrentTabTitle(): void {
     if (!state.activeTabId) return;
@@ -419,11 +420,14 @@ function updateCurrentTabTitle(): void {
     if (tabState.filePath) return;
 
     const text = editor.innerText;
-    const newTitle = truncateTabTitle(getDisplayTitle(text));
+    const rawTitle = getDisplayTitle(text);
+    const tabTitle = truncateTabTitle(rawTitle);
 
-    if (tabState.title !== newTitle) {
-        tabState.title = newTitle;
+    if (tabState.title !== tabTitle || tabState.fullTitle !== rawTitle) {
+        tabState.title = tabTitle;
+        tabState.fullTitle = rawTitle;
         updateTabUI(state.activeTabId);
+        updateHeaderPath(formatHeaderText(null, rawTitle, tabState.modified));
     }
 }
 

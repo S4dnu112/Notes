@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { generateTabId, getFilename, formatDirectoryPath, debounce, truncateTabTitle } from './utils.js';
+import { generateTabId, getFilename, formatHeaderText, debounce, truncateTabTitle, getDisplayTitleFromContent } from './utils.js';
 import { renderContentToEditor, saveEditorToState } from './Editor.js';
 import { updateStatusBar, updateHeaderPath } from './UIManager.js';
 import { TabState, Content } from '../../types';
@@ -39,10 +39,12 @@ export function createTab(filePath: string | null = null, content: Content = [])
     hideWelcomeScreen();
     const id = generateTabId();
 
+    const initialFullTitle = filePath ? getFilename(filePath) : getDisplayTitleFromContent(content);
     const tabState: TabState = {
         id,
         filePath,
-        title: truncateTabTitle(filePath ? getFilename(filePath) : 'Untitled'),
+        title: truncateTabTitle(initialFullTitle),
+        fullTitle: initialFullTitle,
         modified: false,
         imagesLoaded: false,
         content,
@@ -109,7 +111,7 @@ export async function switchToTab(tabId: string): Promise<void> {
     const tabState = state.tabs.get(tabId);
     if (!tabState) return;
 
-    updateHeaderPath(formatDirectoryPath(tabState.filePath));
+    updateHeaderPath(formatHeaderText(tabState.filePath, tabState.fullTitle || tabState.title, tabState.modified));
     scrollTabIntoView(tabId);
 
     // Render content to editor BEFORE loading images
@@ -371,12 +373,13 @@ export async function saveFile(): Promise<void> {
 
     if (result.success) {
         tabState.filePath = filePath;
-        tabState.title = truncateTabTitle(getFilename(filePath));
+        tabState.fullTitle = getFilename(filePath);
+        tabState.title = truncateTabTitle(tabState.fullTitle);
         tabState.modified = false;
 
         Object.assign(tabState.imageMap, tabState.tempImages);
         tabState.tempImages = {};
-        updateHeaderPath(formatDirectoryPath(filePath));
+        updateHeaderPath(formatHeaderText(filePath, tabState.fullTitle || tabState.title, tabState.modified));
 
         updateTabUI(state.activeTabId);
         saveSessionState();
@@ -413,12 +416,13 @@ export async function saveFileAs(): Promise<void> {
 
     if (result.success) {
         tabState.filePath = filePath;
-        tabState.title = truncateTabTitle(getFilename(filePath));
+        tabState.fullTitle = getFilename(filePath);
+        tabState.title = truncateTabTitle(tabState.fullTitle);
         tabState.modified = false;
 
         Object.assign(tabState.imageMap, tabState.tempImages);
         tabState.tempImages = {};
-        updateHeaderPath(formatDirectoryPath(filePath));
+        updateHeaderPath(formatHeaderText(filePath, tabState.fullTitle || tabState.title, tabState.modified));
         updateTabUI(state.activeTabId);
         saveSessionState();
     }
@@ -437,6 +441,7 @@ async function saveSessionState(): Promise<void> {
             id: tabState.id,
             filePath: tabState.filePath,
             title: tabState.title,
+            fullTitle: tabState.fullTitle,
             modified: tabState.modified,
             content: tabState.content
         };
@@ -481,6 +486,7 @@ export async function restoreSession(): Promise<void> {
             id: savedTab.id,
             filePath: savedTab.filePath,
             title: savedTab.title,
+            fullTitle: savedTab.fullTitle || (savedTab.filePath ? getFilename(savedTab.filePath) : getDisplayTitleFromContent(savedTab.content || [])),
             modified: savedTab.modified,
             imagesLoaded: false,
             content: savedTab.content || [],
