@@ -84,12 +84,15 @@ test.describe('Tab Management E2E', () => {
     });
 
     test('should show welcome screen when all tabs closed', async () => {
-        // Create a tab
-        await window.keyboard.press('Control+T');
+        // App starts with 1 tab - close all tabs to show welcome screen
+        let tabCount = await window.locator('.tab').count();
 
-        // Close it
-        await window.keyboard.press('Control+W');
-        await window.waitForTimeout(300);
+        // Close all existing tabs
+        while (tabCount > 0) {
+            await window.keyboard.press('Control+W');
+            await window.waitForTimeout(300);
+            tabCount = await window.locator('.tab').count();
+        }
 
         // Welcome screen should be visible
         const welcomeScreen = await window.locator('#welcome-screen');
@@ -103,6 +106,10 @@ test.describe('Tab Management E2E', () => {
     });
 
     test('should maintain separate content in each tab', async () => {
+        // Close the startup tab first for a clean slate
+        await window.keyboard.press('Control+W');
+        await window.waitForTimeout(200);
+
         // Create first tab
         await window.keyboard.press('Control+T');
         const editor = await window.locator('#editor');
@@ -111,6 +118,7 @@ test.describe('Tab Management E2E', () => {
 
         // Create second tab
         await window.keyboard.press('Control+T');
+        await window.waitForTimeout(100);
         await editor.click();
         await window.keyboard.press('Control+A');
         await window.keyboard.press('Delete');
@@ -118,12 +126,13 @@ test.describe('Tab Management E2E', () => {
 
         // Create third tab
         await window.keyboard.press('Control+T');
+        await window.waitForTimeout(100);
         await editor.click();
         await window.keyboard.press('Control+A');
         await window.keyboard.press('Delete');
         await editor.type('Third tab content');
 
-        // Switch to first tab
+        // Switch to first tab (now index 0)
         const firstTab = await window.locator('.tab').nth(0);
         await firstTab.click();
         await window.waitForTimeout(300);
@@ -177,40 +186,39 @@ test.describe('Tab Management E2E', () => {
     });
 
     test('should cycle through tabs with keyboard', async () => {
-        // Create 3 tabs
+        // Create additional tabs (will have 4 total with startup)
         await window.keyboard.press('Control+T');
         await window.keyboard.press('Control+T');
         await window.keyboard.press('Control+T');
+        await window.waitForTimeout(200);
 
-        // Current: Tab 3 (last created)
-        let activeIndex = await window.locator('.tab.active').evaluateAll(
-            (tabs, allTabs) => allTabs.findIndex(t => t.classList.contains('active')),
-            await window.locator('.tab').elementHandles()
-        );
+        // Helper to find active tab index
+        const getActiveIndex = async () => {
+            const tabs = window.locator('.tab');
+            const count = await tabs.count();
+            for (let i = 0; i < count; i++) {
+                const isActive = await tabs.nth(i).evaluate(el => el.classList.contains('active'));
+                if (isActive) return i;
+            }
+            return -1;
+        };
+
+        // Current: last created tab is active
+        const initialIndex = await getActiveIndex();
 
         // Cycle forward with Ctrl+Tab
         await window.keyboard.press('Control+Tab');
         await window.waitForTimeout(200);
 
-        let newActiveIndex = await window.locator('.tab.active').evaluateAll(
-            (tabs, allTabs) => allTabs.findIndex(t => t.classList.contains('active')),
-            await window.locator('.tab').elementHandles()
-        );
-
-        // Should have moved to next tab (or wrapped around)
-        expect(newActiveIndex).not.toBe(activeIndex);
+        const afterForward = await getActiveIndex();
+        expect(afterForward).not.toBe(initialIndex);
 
         // Cycle backward with Ctrl+Shift+Tab
         await window.keyboard.press('Control+Shift+Tab');
         await window.waitForTimeout(200);
 
-        newActiveIndex = await window.locator('.tab.active').evaluateAll(
-            (tabs, allTabs) => allTabs.findIndex(t => t.classList.contains('active')),
-            await window.locator('.tab').elementHandles()
-        );
-
-        // Should be back to previous position
-        expect(newActiveIndex).toBe(activeIndex);
+        const afterBackward = await getActiveIndex();
+        expect(afterBackward).toBe(initialIndex);
     });
 
     test('should handle closing tab with unsaved content', async () => {
@@ -237,28 +245,31 @@ test.describe('Tab Management E2E', () => {
     });
 
     test('should hide tab bar when only one tab', async () => {
-        // Start fresh - should have no tabs or welcome screen
         const tabsRow = await window.locator('#tabs-row');
 
-        // Create first tab
-        await window.keyboard.press('Control+T');
-        await window.waitForTimeout(200);
-
-        // Tab bar should be hidden with single tab
+        // App already has 1 tab - bar should be hidden
         let isHidden = await tabsRow.evaluate(el =>
             el.classList.contains('hidden') || getComputedStyle(el).display === 'none'
         );
         expect(isHidden).toBe(true);
 
-        // Create second tab
+        // Create second tab - bar should appear
         await window.keyboard.press('Control+T');
         await window.waitForTimeout(200);
 
-        // Tab bar should now be visible
         isHidden = await tabsRow.evaluate(el =>
             el.classList.contains('hidden') || getComputedStyle(el).display === 'none'
         );
         expect(isHidden).toBe(false);
+
+        // Close one tab - bar should hide again (1 tab left)
+        await window.keyboard.press('Control+W');
+        await window.waitForTimeout(200);
+
+        isHidden = await tabsRow.evaluate(el =>
+            el.classList.contains('hidden') || getComputedStyle(el).display === 'none'
+        );
+        expect(isHidden).toBe(true);
     });
 });
 
