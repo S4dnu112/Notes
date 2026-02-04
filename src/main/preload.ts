@@ -17,10 +17,10 @@ contextBridge.exposeInMainWorld('teximg', {
     openFile: (filePath: string, tabId: string) => ipcRenderer.invoke('file:open', filePath, tabId),
     saveDialog: (defaultName: string) => ipcRenderer.invoke('file:save-dialog', defaultName),
     saveAsDialog: (currentPath: string) => ipcRenderer.invoke('file:save-as-dialog', currentPath),
-    saveFile: (data: { tabId: string; filePath: string; content: any; imageMap: Record<string, string>; tempImages: Record<string, string> }) => 
+    saveFile: (data: { tabId: string; filePath: string; content: any; imageMap: Record<string, string>; tempImages: Record<string, string> }) =>
         ipcRenderer.invoke('file:save', data),
-    loadImages: (data: { filePath: string; tabId: string }) => 
-        ipcRenderer.invoke('file:load-images', data),
+    loadImages: (data: { filePath: string; tabId: string }) =>
+        ipcRenderer.invoke('file:load-images', data.filePath, data.tabId),
 
     // Session management
     getSession: () => ipcRenderer.invoke('session:get'),

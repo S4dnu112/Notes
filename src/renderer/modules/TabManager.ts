@@ -65,6 +65,45 @@ export function createTab(filePath: string | null = null, content: Content = [])
 }
 
 export async function closeTab(tabId: string): Promise<void> {
+    const tabState = state.tabs.get(tabId);
+
+    // Check for unsaved changes
+    if (tabState && tabState.modified) {
+        // Get the display name for the dialog
+        const displayName = tabState.fullTitle || tabState.title || 'Untitled';
+
+        // Show confirmation dialog
+        const response = await window.teximg.showUnsavedChangesDialog(displayName);
+
+        if (response === 'cancel') {
+            // User cancelled, keep the tab open
+            return;
+        }
+
+        if (response === 'save') {
+            // Save the file first
+            // If it's the active tab, we can use saveFile directly
+            // Otherwise, we need to switch to it first, save, then close
+            const wasActiveTab = state.activeTabId === tabId;
+
+            if (!wasActiveTab) {
+                // Switch to this tab to save it
+                await switchToTab(tabId);
+            }
+
+            // Save the file
+            await saveFile();
+
+            // Check if save was successful (tab will have filePath and modified = false)
+            const updatedTabState = state.tabs.get(tabId);
+            if (updatedTabState && updatedTabState.modified) {
+                // Save was cancelled or failed, don't close
+                return;
+            }
+        }
+        // If response === 'discard', continue with closing
+    }
+
     // Cleanup temp directory
     await window.teximg.closeTab(tabId);
 

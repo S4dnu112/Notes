@@ -313,7 +313,7 @@ async function handleImagePaste(item: DataTransferItem): Promise<void> {
     if (!blob) return;
 
     const buffer = await blob.arrayBuffer();
-    const result = await window.teximg.saveClipboardBuffer(Array.from(new Uint8Array(buffer)) as any, state.activeTabId!);
+    const result = await window.teximg.saveClipboardBuffer(state.activeTabId!, Array.from(new Uint8Array(buffer)) as any);
 
     if (result.success && result.filename && result.filePath) {
         insertImage(result.filename, result.filePath);
@@ -325,7 +325,7 @@ async function handleImagePaste(item: DataTransferItem): Promise<void> {
 async function handleNativeImagePaste(buffer: any): Promise<void> {
     const tabState = state.tabs.get(state.activeTabId!);
     if (!tabState) return;
-    const result = await window.teximg.saveClipboardBuffer(Array.from(buffer) as any, state.activeTabId!);
+    const result = await window.teximg.saveClipboardBuffer(state.activeTabId!, Array.from(buffer) as any);
     if (result.success && result.filename && result.filePath) {
         insertImage(result.filename, result.filePath);
         tabState.tempImages[result.filename] = result.filePath;

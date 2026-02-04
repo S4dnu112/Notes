@@ -106,6 +106,13 @@ test.describe('Tab Management E2E', () => {
     });
 
     test('should maintain separate content in each tab', async () => {
+        // Mock the dialog to auto-discard any unsaved changes
+        await electronApp.evaluate(async ({ dialog }) => {
+            dialog.showMessageBox = async () => ({
+                response: 1 // "Don't Save" button
+            });
+        });
+
         // Close the startup tab first for a clean slate
         await window.keyboard.press('Control+W');
         await window.waitForTimeout(200);
