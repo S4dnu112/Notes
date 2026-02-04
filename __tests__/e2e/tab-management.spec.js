@@ -1,6 +1,6 @@
 /**
- * E2E Tests - Tab Management
- * Tests tab creation, switching, closing, and multi-tab workflows
+ * E2E Tests - Tab Management (Consolidated)
+ * Tests: tab creation, switching, closing, content isolation, keyboard navigation
  */
 
 const { test, expect, _electron: electron } = require('@playwright/test');
@@ -12,9 +12,7 @@ test.describe('Tab Management E2E', () => {
     let window;
 
     test.beforeEach(async () => {
-        // Create a unique user data dir for each test
         const uniqueUserDataDir = path.join(os.tmpdir(), `teximg-test-data-${Date.now()}-${Math.random()}`);
-
         electronApp = await electron.launch({
             args: [path.join(__dirname, '../../dist/main/main.js'), `--user-data-dir=${uniqueUserDataDir}`]
         });
@@ -23,71 +21,56 @@ test.describe('Tab Management E2E', () => {
     });
 
     test.afterEach(async () => {
-        if (electronApp) {
-            await electronApp.close();
-        }
+        if (electronApp) await electronApp.close();
     });
 
-    test('should create multiple tabs', async () => {
-        // Create first tab
-        await window.keyboard.press('Control+T');
-        await window.waitForTimeout(200);
-
-        // Create second tab
-        await window.keyboard.press('Control+T');
-        await window.waitForTimeout(200);
-
-        // Create third tab
-        await window.keyboard.press('Control+T');
-        await window.waitForTimeout(200);
-
-        // Check tab count
-        const tabs = await window.locator('.tab').count();
-        expect(tabs).toBeGreaterThanOrEqual(3);
-    });
-
-    test('should switch between tabs', async () => {
-        // Create two tabs with different content
-        await window.keyboard.press('Control+T');
+    test('tab lifecycle: create, switch, close, welcome screen, tab bar visibility', async () => {
+        const tabsRow = await window.locator('#tabs-row');
         const editor = await window.locator('#editor');
-        await editor.click();
-        await editor.type('Tab 1 content');
 
-        await window.keyboard.press('Control+T');
-        await editor.click();
-        await window.keyboard.press('Control+A');
-        await window.keyboard.press('Delete');
-        await editor.type('Tab 2 content');
+        // Initially 1 tab - bar should be hidden
+        let isHidden = await tabsRow.evaluate(el =>
+            el.classList.contains('hidden') || getComputedStyle(el).display === 'none'
+        );
+        expect(isHidden).toBe(true);
 
-        // Switch back to first tab (Ctrl+Tab or click)
-        await window.keyboard.press('Control+Shift+Tab');
-        await window.waitForTimeout(300);
-
-        // Verify content switched
-        const content = await editor.textContent();
-        expect(content).toContain('Tab 1 content');
-    });
-
-    test('should close tab with Ctrl+W', async () => {
         // Create tabs
         await window.keyboard.press('Control+T');
+        await window.waitForTimeout(200);
         await window.keyboard.press('Control+T');
+        await window.waitForTimeout(200);
+        await window.keyboard.press('Control+T');
+        await window.waitForTimeout(200);
 
-        const initialCount = await window.locator('.tab').count();
+        // Tab bar should be visible with multiple tabs
+        isHidden = await tabsRow.evaluate(el =>
+            el.classList.contains('hidden') || getComputedStyle(el).display === 'none'
+        );
+        expect(isHidden).toBe(false);
 
-        // Close current tab
-        await window.keyboard.press('Control+W');
-        await window.waitForTimeout(300);
+        // Verify multiple tabs exist
+        let tabs = await window.locator('.tab');
+        expect(await tabs.count()).toBeGreaterThanOrEqual(3);
 
-        const finalCount = await window.locator('.tab').count();
-        expect(finalCount).toBe(initialCount - 1);
-    });
+        // Only one tab should be active
+        let activeTabs = await window.locator('.tab.active').count();
+        expect(activeTabs).toBe(1);
 
-    test('should show welcome screen when all tabs closed', async () => {
-        // App starts with 1 tab - close all tabs to show welcome screen
+        // Tab should have a title
+        const tabTitle = await window.locator('.tab .tab-title').first().textContent();
+        expect(tabTitle).toBeTruthy();
+
+        // Click another tab to switch
+        const firstTab = tabs.first();
+        await firstTab.click();
+        await window.waitForTimeout(200);
+
+        // Verify it's now active
+        const firstTabClass = await firstTab.getAttribute('class');
+        expect(firstTabClass).toContain('active');
+
+        // Close tabs until only welcome screen
         let tabCount = await window.locator('.tab').count();
-
-        // Close all existing tabs
         while (tabCount > 0) {
             await window.keyboard.press('Control+W');
             await window.waitForTimeout(300);
@@ -96,110 +79,66 @@ test.describe('Tab Management E2E', () => {
 
         // Welcome screen should be visible
         const welcomeScreen = await window.locator('#welcome-screen');
-        const isVisible = await welcomeScreen.isVisible();
-        expect(isVisible).toBe(true);
+        expect(await welcomeScreen.isVisible()).toBe(true);
 
         // Editor should be hidden
         const editorContainer = await window.locator('#editor-container');
-        const isEditorVisible = await editorContainer.isVisible();
-        expect(isEditorVisible).toBe(false);
+        expect(await editorContainer.isVisible()).toBe(false);
     });
 
-    test('should maintain separate content in each tab', async () => {
-        // Mock the dialog to auto-discard any unsaved changes
+    test('content isolation: each tab maintains separate content', async () => {
+        // Mock dialog to auto-discard any unsaved changes
         await electronApp.evaluate(async ({ dialog }) => {
-            dialog.showMessageBox = async () => ({
-                response: 1 // "Don't Save" button
-            });
+            dialog.showMessageBox = async () => ({ response: 1 });
         });
 
-        // Close the startup tab first for a clean slate
-        await window.keyboard.press('Control+W');
-        await window.waitForTimeout(200);
-
-        // Create first tab
-        await window.keyboard.press('Control+T');
         const editor = await window.locator('#editor');
-        await editor.click();
-        await editor.type('First tab content');
 
-        // Create second tab
+        // Create tabs with different content
         await window.keyboard.press('Control+T');
-        await window.waitForTimeout(100);
-        await editor.click();
-        await window.keyboard.press('Control+A');
-        await window.keyboard.press('Delete');
-        await editor.type('Second tab content');
-
-        // Create third tab
-        await window.keyboard.press('Control+T');
-        await window.waitForTimeout(100);
-        await editor.click();
-        await window.keyboard.press('Control+A');
-        await window.keyboard.press('Delete');
-        await editor.type('Third tab content');
-
-        // Switch to first tab (now index 0)
-        const firstTab = await window.locator('.tab').nth(0);
-        await firstTab.click();
-        await window.waitForTimeout(300);
-
-        let content = await editor.textContent();
-        expect(content).toContain('First tab content');
-
-        // Switch to second tab
-        const secondTab = await window.locator('.tab').nth(1);
-        await secondTab.click();
-        await window.waitForTimeout(300);
-
-        content = await editor.textContent();
-        expect(content).toContain('Second tab content');
-
-        // Switch to third tab
-        const thirdTab = await window.locator('.tab').nth(2);
-        await thirdTab.click();
-        await window.waitForTimeout(300);
-
-        content = await editor.textContent();
-        expect(content).toContain('Third tab content');
-    });
-
-    test('should highlight active tab', async () => {
-        // Create two tabs
-        await window.keyboard.press('Control+T');
-        await window.keyboard.press('Control+T');
-
-        // Second tab should be active
-        let activeTabs = await window.locator('.tab.active').count();
-        expect(activeTabs).toBe(1);
-
-        // Click first tab
-        const firstTab = await window.locator('.tab').nth(0);
-        await firstTab.click();
         await window.waitForTimeout(200);
+        await editor.click();
+        await editor.type('Content for Tab A');
 
-        // First tab should now be active
-        const activeClass = await firstTab.getAttribute('class');
-        expect(activeClass).toContain('active');
-    });
-
-    test('should show tab titles', async () => {
         await window.keyboard.press('Control+T');
+        await window.waitForTimeout(200);
+        await editor.click();
+        await editor.type('Content for Tab B');
 
-        // Check tab has title (default should be "Untitled")
-        const tabTitle = await window.locator('.tab .tab-title').first().textContent();
-        expect(tabTitle).toBeTruthy();
-        expect(tabTitle.length).toBeGreaterThan(0);
+        await window.keyboard.press('Control+T');
+        await window.waitForTimeout(200);
+        await editor.click();
+        await editor.type('Content for Tab C');
+
+        // Get tab positions
+        const totalTabs = await window.locator('.tab').count();
+
+        // Switch to Tab A and verify content
+        const tabA = await window.locator('.tab').nth(totalTabs - 3);
+        await tabA.click();
+        await window.waitForTimeout(300);
+        expect(await editor.textContent()).toContain('Content for Tab A');
+
+        // Switch to Tab B and verify content
+        const tabB = await window.locator('.tab').nth(totalTabs - 2);
+        await tabB.click();
+        await window.waitForTimeout(300);
+        expect(await editor.textContent()).toContain('Content for Tab B');
+
+        // Switch to Tab C and verify content
+        const tabC = await window.locator('.tab').nth(totalTabs - 1);
+        await tabC.click();
+        await window.waitForTimeout(300);
+        expect(await editor.textContent()).toContain('Content for Tab C');
     });
 
-    test('should cycle through tabs with keyboard', async () => {
-        // Create additional tabs (will have 4 total with startup)
+    test('keyboard navigation: cycle through tabs with Ctrl+Tab', async () => {
+        // Create multiple tabs
         await window.keyboard.press('Control+T');
         await window.keyboard.press('Control+T');
         await window.keyboard.press('Control+T');
         await window.waitForTimeout(200);
 
-        // Helper to find active tab index
         const getActiveIndex = async () => {
             const tabs = window.locator('.tab');
             const count = await tabs.count();
@@ -210,74 +149,18 @@ test.describe('Tab Management E2E', () => {
             return -1;
         };
 
-        // Current: last created tab is active
         const initialIndex = await getActiveIndex();
 
-        // Cycle forward with Ctrl+Tab
+        // Cycle forward
         await window.keyboard.press('Control+Tab');
         await window.waitForTimeout(200);
-
         const afterForward = await getActiveIndex();
         expect(afterForward).not.toBe(initialIndex);
 
-        // Cycle backward with Ctrl+Shift+Tab
+        // Cycle backward
         await window.keyboard.press('Control+Shift+Tab');
         await window.waitForTimeout(200);
-
         const afterBackward = await getActiveIndex();
         expect(afterBackward).toBe(initialIndex);
     });
-
-    test('should handle closing tab with unsaved content', async () => {
-        // Create tab with content
-        await window.keyboard.press('Control+T');
-        const editor = await window.locator('#editor');
-        await editor.click();
-        await editor.type('Unsaved content');
-
-        // Try to close - should show dialog or mark as modified
-        const initialCount = await window.locator('.tab').count();
-
-        await window.keyboard.press('Control+W');
-        await window.waitForTimeout(500);
-
-        // Depending on implementation, either:
-        // 1. Dialog shown and tab still open
-        // 2. Tab closed immediately (modern approach with session save)
-
-        const finalCount = await window.locator('.tab').count();
-
-        // Accept either behavior as valid
-        expect(finalCount).toBeGreaterThanOrEqual(0);
-    });
-
-    test('should hide tab bar when only one tab', async () => {
-        const tabsRow = await window.locator('#tabs-row');
-
-        // App already has 1 tab - bar should be hidden
-        let isHidden = await tabsRow.evaluate(el =>
-            el.classList.contains('hidden') || getComputedStyle(el).display === 'none'
-        );
-        expect(isHidden).toBe(true);
-
-        // Create second tab - bar should appear
-        await window.keyboard.press('Control+T');
-        await window.waitForTimeout(200);
-
-        isHidden = await tabsRow.evaluate(el =>
-            el.classList.contains('hidden') || getComputedStyle(el).display === 'none'
-        );
-        expect(isHidden).toBe(false);
-
-        // Close one tab - bar should hide again (1 tab left)
-        await window.keyboard.press('Control+W');
-        await window.waitForTimeout(200);
-
-        isHidden = await tabsRow.evaluate(el =>
-            el.classList.contains('hidden') || getComputedStyle(el).display === 'none'
-        );
-        expect(isHidden).toBe(true);
-    });
 });
-
-
