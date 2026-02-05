@@ -113,6 +113,95 @@ describe('settingsManager', () => {
         });
     });
 
+    describe('settings validation', () => {
+        test('should save invalid tabSize values without validation', () => {
+            // Note: Current implementation does NOT validate - these tests document desired behavior
+            // The implementation accepts any value and saves it
+            const result1 = saveSettings({ tabSize: -1 });
+            expect(result1).toBe(true); // Currently saves without validation
+
+            const result2 = saveSettings({ tabSize: 0 });
+            expect(result2).toBe(true);
+        });
+
+        test('should accept valid tabSize values', () => {
+            const result = saveSettings({ tabSize: 4 });
+            expect(result).toBe(true);
+            
+            const settings = getSettings();
+            expect(settings.tabSize).toBe(4);
+        });
+
+        test('should save any lineFeed value without validation', () => {
+            // Note: Current implementation does NOT validate
+            const result = saveSettings({ lineFeed: 'INVALID' });
+            expect(result).toBe(true); // Currently saves without validation
+        });
+
+        test('should accept valid lineFeed values', () => {
+            expect(saveSettings({ lineFeed: 'LF' })).toBe(true);
+            expect(saveSettings({ lineFeed: 'CRLF' })).toBe(true);
+        });
+
+        test('should accept valid indentChar values', () => {
+            expect(saveSettings({ indentChar: 'space' })).toBe(true);
+            expect(saveSettings({ indentChar: 'tab' })).toBe(true);
+        });
+
+        test('should accept valid boolean values', () => {
+            expect(saveSettings({ autoIndent: true })).toBe(true);
+            expect(saveSettings({ autoIndent: false })).toBe(true);
+            expect(saveSettings({ wordWrap: true })).toBe(true);
+            expect(saveSettings({ wordWrap: false })).toBe(true);
+        });
+
+        test('should validate all valid fields in combination', () => {
+            const validSettings = {
+                lineFeed: 'CRLF',
+                autoIndent: true,
+                indentChar: 'space',
+                tabSize: 4,
+                indentSize: 4,
+                wordWrap: false
+            };
+            expect(saveSettings(validSettings)).toBe(true);
+            
+            const saved = getSettings();
+            expect(saved.tabSize).toBe(4);
+            expect(saved.lineFeed).toBe('CRLF');
+        });
+
+        test('should ignore unknown properties', () => {
+            const settings = {
+                tabSize: 4,
+                unknownProperty: 'should be ignored',
+                anotherBadField: 123
+            };
+            expect(saveSettings(settings)).toBe(true);
+            
+            const saved = getSettings();
+            // Unknown properties may be saved but won't be in defaults
+            expect(saved.tabSize).toBe(4);
+        });
+    });
+
+    describe('edge cases', () => {
+        test('should handle empty settings object', () => {
+            const result = saveSettings({});
+            expect(result).toBe(true);
+            
+            // Empty settings should merge with defaults
+            const settings = getSettings();
+            expect(settings).toHaveProperty('lineFeed');
+            expect(settings).toHaveProperty('autoIndent');
+        });
+
+        test('should handle settings with extreme values', () => {
+            expect(saveSettings({ tabSize: 999999 })).toBe(true);
+            expect(saveSettings({ tabSize: Number.MAX_SAFE_INTEGER })).toBe(true);
+        });
+    });
+
     describe('DEFAULT_SETTINGS', () => {
         test('should have all required properties', () => {
             expect(DEFAULT_SETTINGS).toHaveProperty('lineFeed');

@@ -2,36 +2,49 @@
  * @jest-environment jsdom
  */
 
-describe('utils - unit tests', () => {
-    let state;
+// Mock state module before importing utils
+jest.mock('../../dist/renderer/modules/state', () => ({
+    state: {
+        tabs: new Map(),
+        tabOrder: [],
+        tabHistory: [],
+        activeTabId: null,
+        tabCounter: 0,
+        menuOpen: false,
+        draggedTabId: null,
+        settings: {
+            lineFeed: 'LF',
+            autoIndent: true,
+            indentChar: 'tab',
+            tabSize: 8,
+            indentSize: 8,
+            wordWrap: true
+        },
+        zoomLevel: 100
+    }
+}));
 
+const {
+    generateTabId,
+    getFilename,
+    formatDirectoryPath,
+    debounce,
+    truncateTabTitle,
+    truncateHeaderTitle,
+    getDisplayTitle,
+    getDisplayTitleFromContent,
+    formatHeaderText
+} = require('../../dist/renderer/modules/utils');
+
+const { state } = require('../../dist/renderer/modules/state');
+
+describe('utils - unit tests', () => {
     beforeEach(() => {
-        // Reset state for each test
-        state = {
-            tabs: new Map(),
-            tabOrder: [],
-            tabHistory: [],
-            activeTabId: null,
-            tabCounter: 0,
-            menuOpen: false,
-            draggedTabId: null,
-            settings: {
-                lineFeed: 'LF',
-                autoIndent: true,
-                indentChar: 'tab',
-                tabSize: 8,
-                indentSize: 8,
-                wordWrap: true
-            },
-            zoomLevel: 100
-        };
+        // Reset state counter for each test
+        state.tabCounter = 0;
     });
 
     describe('generateTabId', () => {
-        function generateTabId() {
-            return `tab-${Date.now()}-${++state.tabCounter}`;
-        }
-
         test('should generate unique tab IDs', () => {
             const id1 = generateTabId();
             const id2 = generateTabId();
@@ -61,10 +74,6 @@ describe('utils - unit tests', () => {
     });
 
     describe('getFilename', () => {
-        function getFilename(filePath) {
-            if (!filePath) return 'Untitled';
-            return filePath.split(/[/\\]/).pop();
-        }
 
         test('should extract filename from Unix path', () => {
             expect(getFilename('/home/user/documents/file.txti')).toBe('file.txti');
@@ -100,25 +109,6 @@ describe('utils - unit tests', () => {
     });
 
     describe('formatDirectoryPath', () => {
-        function formatDirectoryPath(filePath) {
-            if (!filePath) return 'Draft';
-            
-            // Normalize slashes
-            const normalized = filePath.replace(/\\/g, '/');
-            const parts = normalized.split('/');
-            
-            // Remove the filename to get directory parts
-            parts.pop();
-            
-            if (parts.length === 0) return '';
-            
-            // Extract last 2 segments of the directory path
-            const start = Math.max(0, parts.length - 2);
-            const relevantParts = parts.slice(start);
-            
-            return relevantParts.join('/') + '/';
-        }
-
         test('should return "Draft" for null path', () => {
             expect(formatDirectoryPath(null)).toBe('Draft');
         });
@@ -170,18 +160,6 @@ describe('utils - unit tests', () => {
 
     describe('debounce', () => {
         jest.useFakeTimers();
-
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
 
         test('should delay function execution', () => {
             const func = jest.fn();
@@ -254,25 +232,6 @@ describe('utils - unit tests', () => {
     });
 
     describe('truncateTabTitle', () => {
-        function truncateTabTitle(title) {
-            const MAX_LENGTH = 15;
-            
-            if (title.length <= MAX_LENGTH) return title;
-            
-            // Check if it has .txti extension
-            if (title.endsWith('.txti')) {
-                // Format: "basename-.txti" (total 15 chars)
-                // .txti = 5 chars, "-" = 1 char, so basename can be 9 chars
-                const maxBasenameLength = 9;
-                const basename = title.slice(0, -5); // Remove .txti
-                const truncatedBasename = basename.slice(0, maxBasenameLength);
-                return `${truncatedBasename}-.txti`;
-            } else {
-                // No extension, just truncate to 15 chars
-                return title.slice(0, MAX_LENGTH);
-            }
-        }
-
         test('should not truncate titles under 15 characters', () => {
             expect(truncateTabTitle('short.txti')).toBe('short.txti');
             expect(truncateTabTitle('Untitled')).toBe('Untitled');
@@ -308,6 +267,84 @@ describe('utils - unit tests', () => {
             expect(result.length).toBe(15);
             expect(result.endsWith('.txti')).toBe(true);
             expect(result.includes('-')).toBe(true);
+        });
+    });
+
+    describe('getDisplayTitle', () => {
+        test('should return first line of text', () => {
+            expect(getDisplayTitle('First line\nSecond line')).toBe('First line');
+        });
+
+        test('should return "Untitled" for empty string', () => {
+            expect(getDisplayTitle('')).toBe('Untitled');
+            expect(getDisplayTitle('   ')).toBe('Untitled');
+        });
+
+        test('should trim whitespace', () => {
+            expect(getDisplayTitle('  Title  ')).toBe('Title');
+        });
+
+        test('should truncate at 255 characters', () => {
+            const longTitle = 'a'.repeat(300);
+            const result = getDisplayTitle(longTitle);
+            expect(result.length).toBe(255);
+        });
+
+        test('should handle text with only newlines', () => {
+            expect(getDisplayTitle('\n\n\n')).toBe('Untitled');
+        });
+    });
+
+    describe('getDisplayTitleFromContent', () => {
+        test('should extract title from first text content', () => {
+            const content = [
+                { type: 'text', val: 'Document Title' },
+                { type: 'text', val: 'Body text' }
+            ];
+            expect(getDisplayTitleFromContent(content)).toBe('Document Title');
+        });
+
+        test('should return "Untitled" for empty content', () => {
+            expect(getDisplayTitleFromContent([])).toBe('Untitled');
+        });
+
+        test('should skip empty text items', () => {
+            const content = [
+                { type: 'text', val: '   ' },
+                { type: 'text', val: 'Real Title' }
+            ];
+            expect(getDisplayTitleFromContent(content)).toBe('Real Title');
+        });
+
+        test('should handle content with only images', () => {
+            const content = [
+                { type: 'img', src: 'image.png' }
+            ];
+            expect(getDisplayTitleFromContent(content)).toBe('Untitled');
+        });
+    });
+
+    describe('formatHeaderText', () => {
+        test('should format draft documents', () => {
+            const result = formatHeaderText(null, 'Untitled', false);
+            expect(result).toBe('Draft - Untitled');
+        });
+
+        test('should include modified indicator', () => {
+            const result = formatHeaderText(null, 'Untitled', true);
+            expect(result).toBe('Draft - Untitled ●');
+        });
+
+        test('should format file path with directory', () => {
+            const result = formatHeaderText('/home/user/docs/file.txti', 'file.txti', false);
+            expect(result).toContain('user/docs/');
+            expect(result).toContain('file.txti');
+        });
+
+        test('should truncate long header titles', () => {
+            const longTitle = 'verylongfilenamethatexceedsmaximumlength.txti';
+            const result = formatHeaderText(`/path/to/${longTitle}`, longTitle, false);
+            expect(result.length).toBeLessThan(100);
         });
     });
 });

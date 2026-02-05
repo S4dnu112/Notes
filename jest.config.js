@@ -11,11 +11,15 @@ module.exports = {
     testMatch: [
         '**/__tests__/**/*.test.{js,ts}',
         '!**/__tests__/e2e/**',
-        '!**/__tests__/component/**'  // Temporarily skip due to jsdom ESM issues
+        '!**/__tests__/component/**'  // Skipped - blocked by jsdom ESM dependency (@exodus/bytes) issue
     ],
     moduleFileExtensions: ['js', 'ts', 'json'],
     testTimeout: 10000,
     verbose: true,
+    // Mock problematic ESM modules
+    moduleNameMapper: {
+        '^@exodus/bytes$': '<rootDir>/__mocks__/@exodus/bytes.js'
+    },
     // Use ts-jest for TypeScript, babel-jest for JavaScript
     transform: {
         '^.+\.ts$': 'ts-jest',
@@ -23,7 +27,7 @@ module.exports = {
     },
     // Transform ES modules in node_modules
     transformIgnorePatterns: [
-        'node_modules/(?!(@exodus|html-encoding-sniffer|jsdom)/)'
+        'node_modules/(?!(@exodus|html-encoding-sniffer|jsdom|whatwg-encoding)/)'
     ],
     // Clear mocks between tests
     clearMocks: true,
@@ -40,7 +44,8 @@ module.exports = {
                 '**/__tests__/renderer/**/*.test.js'
             ]
         }
-        // Temporarily disabled jsdom tests due to ESM dependency issues
-        // Will re-enable after TypeScript migration with proper ESM support
+        // Component tests temporarily disabled due to jsdom ESM dependency issues
+        // The @exodus/bytes module used by html-encoding-sniffer (jsdom dependency)
+        // uses ESM exports which Jest cannot transform in the current setup
     ]
 };
