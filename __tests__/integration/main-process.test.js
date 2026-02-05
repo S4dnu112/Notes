@@ -323,12 +323,14 @@ describe('Main Process - IPC Integration Tests', () => {
                 { type: 'text', val: 'Line 1' },
                 { type: 'text', val: 'Line 2' }
             ];
-            const imageFiles = [];
+            const imageMap = {};
+            const tempImages = {};
 
             const result = await handler(mockEvent, {
                 filePath: testFile,
                 content,
-                imageFiles
+                imageMap,
+                tempImages
             });
 
             expect(result.success).toBe(true);
@@ -349,12 +351,14 @@ describe('Main Process - IPC Integration Tests', () => {
             const content = [
                 { type: 'img', src: 'test.png' }
             ];
-            const imageFiles = [imagePath];
+            const imageMap = { 'test.png': imagePath };
+            const tempImages = {};
 
             const result = await handler(mockEvent, {
                 filePath: testFile,
                 content,
-                imageFiles
+                imageMap,
+                tempImages
             });
 
             expect(result.success).toBe(true);
@@ -371,13 +375,15 @@ describe('Main Process - IPC Integration Tests', () => {
             fs.writeFileSync(imagePath, imageData);
 
             const content = [{ type: 'img', src: 'image.png' }];
-            await createZip(content, [imagePath], testFile);
+            await createZip(content, { 'image.png': imagePath }, testFile);
 
             const handler = handlers['file:load-images'];
             const result = await handler(mockEvent, testFile, 'tab-xyz');
 
             expect(result.success).toBe(true);
-            expect(result.imageMap).toHaveProperty('image.png');
+            expect(result.imageMap).toBeDefined();
+            expect(typeof result.imageMap).toBe('object');
+            expect(Object.keys(result.imageMap)).toContain('image.png');
             expect(fs.existsSync(result.imageMap['image.png'])).toBe(true);
         });
     });
@@ -584,6 +590,8 @@ describe('Main Process - IPC Integration Tests', () => {
     });
 
     describe('Window Management IPC Handlers', () => {
+        const { BrowserWindow } = require('electron');
+
         beforeEach(() => {
             jest.isolateModules(() => {
                 require('../../dist/main/main.js');
@@ -591,16 +599,16 @@ describe('Main Process - IPC Integration Tests', () => {
         });
 
         test('window:isMaximized should return window state', async () => {
-            const mockWindow = {
+            const testWindow = {
                 isMaximized: jest.fn(() => true)
             };
-            mockEvent.sender.getOwnerBrowserWindow = jest.fn(() => mockWindow);
+            BrowserWindow.fromWebContents.mockReturnValueOnce(testWindow);
 
             const handler = handlers['window:isMaximized'];
             const result = await handler(mockEvent);
 
             expect(result).toBe(true);
-            expect(mockWindow.isMaximized).toHaveBeenCalled();
+            expect(testWindow.isMaximized).toHaveBeenCalled();
         });
 
         test('window:get-count should return number of windows', async () => {
