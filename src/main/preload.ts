@@ -7,6 +7,8 @@ contextBridge.exposeInMainWorld('teximg', {
     maximize: () => ipcRenderer.invoke('window:maximize'),
     forceClose: () => ipcRenderer.invoke('window:force-close'),
     newWindow: () => ipcRenderer.invoke('window:new'),
+    openKeyboardShortcuts: () => ipcRenderer.invoke('window:keyboard-shortcuts'),
+    openPreferences: () => ipcRenderer.invoke('window:preferences'),
     showMenu: () => ipcRenderer.invoke('menu:show'),
     getWindowCount: () => ipcRenderer.invoke('window:get-count'),
     isMaximized: () => ipcRenderer.invoke('window:isMaximized'),

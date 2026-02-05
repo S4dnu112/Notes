@@ -8,6 +8,8 @@ interface TexImgAPI {
     maximize: () => void;
     forceClose: () => void;
     newWindow: () => void;
+    openKeyboardShortcuts: () => void;
+    openPreferences: () => void;
     showMenu: () => void;
     getWindowCount: () => Promise<number>;
     isMaximized: () => Promise<boolean>;

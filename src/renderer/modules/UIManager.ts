@@ -48,14 +48,9 @@ export function initUI(tabManagerFuncs: TabManagerFuncs): void {
     window.teximg.onMenuAction((action: string) => {
         switch (action) {
             case 'new-window': window.teximg.newWindow(); break;
-            case 'new-tab': createTab(); break;
-            case 'open': openFile(); break;
             case 'save': saveFile(); break;
             case 'save-as': saveFileAs(); break;
-            case 'undo': undo(); break;
-            case 'redo': redo(); break;
-            case 'close-tab': if (state.activeTabId) closeTab(state.activeTabId); break;
-            case 'settings': openSettings(); break;
+            case 'preferences': window.teximg.openPreferences(); break;
         }
     });
 

@@ -1037,3 +1037,370 @@ body {
         transform: scale(1);
     }
 }
+
+/* ============================================
+   Preferences Window Styles
+   ============================================ */
+
+body.preferences-window {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: #ffffff;
+    color: #333;
+    -webkit-app-region: drag;
+}
+
+.window-controls {
+    position: fixed;
+    top: 0;
+    right: 0;
+    display: flex;
+    -webkit-app-region: no-drag;
+    z-index: 1000;
+}
+
+.window-control-btn {
+    width: 46px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    transition: background 0.15s, color 0.15s;
+}
+
+.window-control-btn:hover {
+    background: #e0e0e0;
+}
+
+.window-control-btn:active {
+    background: #d0d0d0;
+}
+
+.btn-close:hover {
+    background: #e81123;
+    color: white;
+}
+
+.container {
+    display: flex;
+    height: 100vh;
+}
+
+.sidebar {
+    width: 200px;
+    background: #f5f5f5;
+    border-right: 1px solid #e0e0e0;
+    padding: 50px 0 20px 0;
+    -webkit-app-region: no-drag;
+}
+
+.sidebar-item {
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 14px;
+    color: #333;
+}
+
+.sidebar-item:hover {
+    background: #e8e8e8;
+}
+
+.sidebar-item.active {
+    background: #fff;
+    border-left: 3px solid #0078d4;
+    padding-left: 17px;
+    font-weight: 600;
+}
+
+.content {
+    flex: 1;
+    padding: 50px 40px 80px 40px;
+    overflow-y: auto;
+    -webkit-app-region: no-drag;
+}
+
+.preferences-section {
+    display: none;
+}
+
+.preferences-section.active {
+    display: block;
+}
+
+.preferences-window h1 {
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #000;
+}
+
+.section-description {
+    color: #666;
+    margin-bottom: 30px;
+    font-size: 14px;
+}
+
+.preference-group {
+    margin-bottom: 30px;
+}
+
+.preference-group-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.preference-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.preference-item:last-child {
+    border-bottom: none;
+}
+
+.preference-label {
+    flex: 1;
+}
+
+.preference-title {
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.preference-description {
+    font-size: 12px;
+    color: #999;
+}
+
+.preference-control {
+    margin-left: 20px;
+}
+
+/* Select Dropdown */
+select {
+    padding: 6px 30px 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: white;
+    font-size: 14px;
+    cursor: pointer;
+    min-width: 150px;
+}
+
+select:hover {
+    border-color: #999;
+}
+
+select:focus {
+    outline: none;
+    border-color: #0078d4;
+}
+
+/* Number Input */
+input[type="number"] {
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 80px;
+}
+
+input[type="number"]:focus {
+    outline: none;
+    border-color: #0078d4;
+}
+
+/* Number Control with +/- buttons */
+.number-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.number-control input[type="number"] {
+    width: 60px;
+    text-align: center;
+    -moz-appearance: textfield;
+}
+
+.number-control input[type="number"]::-webkit-outer-spin-button,
+.number-control input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.number-control .number-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: white;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+    color: #333;
+}
+
+.number-control .number-btn:hover {
+    background: #f5f5f5;
+    border-color: #999;
+}
+
+.number-control .number-btn:active {
+    background: #e8e8e8;
+}
+
+/* Button */
+.btn {
+    padding: 8px 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: white;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.btn:hover {
+    background: #f5f5f5;
+}
+
+.btn:active {
+    background: #e8e8e8;
+}
+
+.btn-primary {
+    background: #0078d4;
+    color: white;
+    border-color: #0078d4;
+}
+
+.btn-primary:hover {
+    background: #106ebe;
+    border-color: #106ebe;
+}
+
+.btn-primary:active {
+    background: #005a9e;
+}
+
+/* Footer */
+.preferences-footer {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    left: 200px;
+    height: 60px;
+    background: #fafafa;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 40px;
+    gap: 12px;
+    -webkit-app-region: no-drag;
+}
+
+/* Keyboard Shortcuts Table */
+.shortcuts-intro {
+    background: #f8f9fa;
+    padding: 16px;
+    border-radius: 6px;
+    margin-bottom: 24px;
+    font-size: 13px;
+    color: #666;
+    line-height: 1.6;
+}
+
+.shortcuts-intro a {
+    color: #0078d4;
+    text-decoration: none;
+}
+
+.shortcuts-intro a:hover {
+    text-decoration: underline;
+}
+
+.shortcuts-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.shortcuts-table thead {
+    background: #f5f5f5;
+}
+
+.shortcuts-table th {
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #666;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.shortcuts-table td {
+    padding: 12px 16px;
+    font-size: 14px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.shortcuts-table tr:hover {
+    background: #fafafa;
+}
+
+.shortcut-description {
+    color: #333;
+}
+
+.shortcut-keys {
+    color: #555;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+}
+
+.shortcut-options {
+    display: flex;
+    gap: 8px;
+}
+
+.icon-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background 0.15s;
+    color: #666;
+}
+
+.icon-btn:hover {
+    background: #e8e8e8;
+}
+
+.icon-btn.edit-btn {
+    color: #0078d4;
+}
+
+.icon-btn.delete-btn:hover {
+    background: #ffebee;
+    color: #d32f2f;
+}

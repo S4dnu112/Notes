@@ -185,18 +185,11 @@ ipcMain.handle('menu:show', (event: IpcMainInvokeEvent) => {
 
     const template: Electron.MenuItemConstructorOptions[] = [
         { label: 'New Window', accelerator: 'CmdOrCtrl+N', click: () => win.webContents.send('menu:action', 'new-window') },
-        { label: 'New Tab', accelerator: 'CmdOrCtrl+T', click: () => win.webContents.send('menu:action', 'new-tab') },
         { type: 'separator' },
-        { label: 'Open', accelerator: 'CmdOrCtrl+O', click: () => win.webContents.send('menu:action', 'open') },
         { label: 'Save', accelerator: 'CmdOrCtrl+S', click: () => win.webContents.send('menu:action', 'save') },
         { label: 'Save As', accelerator: 'CmdOrCtrl+Shift+S', click: () => win.webContents.send('menu:action', 'save-as') },
         { type: 'separator' },
-        { label: 'Undo', accelerator: 'CmdOrCtrl+Z', click: () => win.webContents.send('menu:action', 'undo') },
-        { label: 'Redo', accelerator: 'CmdOrCtrl+Y', click: () => win.webContents.send('menu:action', 'redo') },
-        { type: 'separator' },
-        { label: 'Close Tab', accelerator: 'CmdOrCtrl+W', click: () => win.webContents.send('menu:action', 'close-tab') },
-        { type: 'separator' },
-        { label: 'Settings', click: () => win.webContents.send('menu:action', 'settings') },
+        { label: 'Preferences', click: () => win.webContents.send('menu:action', 'preferences') },
     ];
 
     const menu = Menu.buildFromTemplate(template);
@@ -233,6 +226,44 @@ ipcMain.handle('window:force-close', (event: IpcMainInvokeEvent) => {
 // Create a new window
 ipcMain.handle('window:new', () => {
     createWindow();
+});
+
+// Open keyboard shortcuts window
+ipcMain.handle('window:keyboard-shortcuts', () => {
+    const shortcutsWindow = new BrowserWindow({
+        width: 800,
+        height: 700,
+        minWidth: 600,
+        minHeight: 500,
+        backgroundColor: '#ffffff',
+        frame: false,
+        titleBarStyle: 'hidden',
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+        }
+    });
+
+    shortcutsWindow.loadFile(path.join(__dirname, '../renderer/keyboard-shortcuts.html'));
+});
+
+// Open preferences window
+ipcMain.handle('window:preferences', () => {
+    const preferencesWindow = new BrowserWindow({
+        width: 900,
+        height: 650,
+        minWidth: 700,
+        minHeight: 500,
+        backgroundColor: '#ffffff',
+        frame: false,
+        titleBarStyle: 'hidden',
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+        }
+    });
+
+    preferencesWindow.loadFile(path.join(__dirname, '../renderer/preferences.html'));
 });
 
 // Get window count

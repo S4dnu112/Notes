@@ -5,7 +5,7 @@
   "main": "dist/main/main.js",
   "scripts": {
     "clean": "rm -rf dist/",
-    "copy:assets": "cp src/renderer/index.html src/renderer/style.css dist/renderer/",
+    "copy:assets": "cp src/renderer/index.html src/renderer/styles.css src/renderer/preferences.html dist/renderer/",
     "build": "npm run clean && tsc && tsc -p tsconfig.renderer.json && npm run copy:assets",
     "build:main": "tsc",
     "build:renderer": "tsc -p tsconfig.renderer.json && npm run copy:assets",
