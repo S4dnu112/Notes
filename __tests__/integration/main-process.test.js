@@ -425,6 +425,43 @@ describe('Main Process - IPC Integration Tests', () => {
             expect(result).toBe('cancel');
         });
 
+        test('dialog:unsaved-changes-multiple should show multi-file dialog', async () => {
+            dialog.showMessageBox.mockResolvedValue({ response: 0 }); // Save All
+
+            const handler = handlers['dialog:unsaved-changes-multiple'];
+            const filenames = ['file1.txti', 'file2.txti', 'file3.txti'];
+            const result = await handler(mockEvent, filenames);
+
+            expect(result).toBe('save');
+            expect(dialog.showMessageBox).toHaveBeenCalledWith(
+                expect.anything(),
+                expect.objectContaining({
+                    type: 'question',
+                    buttons: ['Save All', "Don't Save", 'Cancel'],
+                    message: expect.stringContaining('3 files'),
+                    detail: expect.stringContaining('file1.txti')
+                })
+            );
+        });
+
+        test('dialog:unsaved-changes-multiple should handle discard option', async () => {
+            dialog.showMessageBox.mockResolvedValue({ response: 1 }); // Don't Save
+
+            const handler = handlers['dialog:unsaved-changes-multiple'];
+            const result = await handler(mockEvent, ['file1.txti', 'file2.txti']);
+
+            expect(result).toBe('discard');
+        });
+
+        test('dialog:unsaved-changes-multiple should handle cancel option', async () => {
+            dialog.showMessageBox.mockResolvedValue({ response: 2 }); // Cancel
+
+            const handler = handlers['dialog:unsaved-changes-multiple'];
+            const result = await handler(mockEvent, ['file1.txti']);
+
+            expect(result).toBe('cancel');
+        });
+
         test('file:open-dialog should return selected file path', async () => {
             const selectedPath = '/user/selected/file.txti';
             dialog.showOpenDialog.mockResolvedValue({

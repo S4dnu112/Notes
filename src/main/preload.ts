@@ -35,6 +35,7 @@ contextBridge.exposeInMainWorld('teximg', {
 
     // Dialogs
     showUnsavedChangesDialog: (filename: string) => ipcRenderer.invoke('dialog:unsaved-changes', filename),
+    showMultipleUnsavedChangesDialog: (filenames: string[]) => ipcRenderer.invoke('dialog:unsaved-changes-multiple', filenames),
 
     // Tab management
     closeTab: (tabId: string) => ipcRenderer.invoke('tab:close', tabId),

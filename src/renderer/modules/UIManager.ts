@@ -160,7 +160,7 @@ function setupKeyboardShortcuts({ createTab, openFile, saveFile, saveFileAs, clo
 
 // Close request handler - handles both CASE A (multiple windows) and CASE B (last window)
 let closeRequestHandlerSetup = false;
-function setupCloseRequestHandler(_funcs: Pick<TabManagerFuncs, 'saveFile'>): void {
+function setupCloseRequestHandler(funcs: Pick<TabManagerFuncs, 'saveFile'>): void {
     if (closeRequestHandlerSetup) return;
     closeRequestHandlerSetup = true;
 
@@ -175,10 +175,19 @@ function setupCloseRequestHandler(_funcs: Pick<TabManagerFuncs, 'saveFile'>): vo
                 return;
             }
 
-            for (const tabState of dirtyTabs) {
-                const response = await window.teximg.showUnsavedChangesDialog(tabState.title);
+            // Show multi-file dialog with all unsaved tabs
+            const filenames = dirtyTabs.map(tab => tab.fullTitle || tab.title || 'Untitled');
+            const response = await window.teximg.showMultipleUnsavedChangesDialog(filenames);
 
-                if (response === 'cancel') {
+            if (response === 'cancel') {
+                return;
+            }
+
+            if (response === 'save') {
+                // Save all dirty tabs
+                const saveSuccess = await saveAllTabs(dirtyTabs, funcs.saveFile);
+                if (!saveSuccess) {
+                    // If any save was cancelled or failed, don't close
                     return;
                 }
             }
@@ -199,6 +208,38 @@ function getDirtyTabs(): TabState[] {
     return dirtyTabs;
 }
 
+// Save all dirty tabs - returns true if all saves succeeded, false if any were cancelled
+async function saveAllTabs(dirtyTabs: TabState[], saveFileFn: () => Promise<void>): Promise<boolean> {
+    // Import necessary functions
+    const { switchToTab } = await import('./TabManager.js');
+    
+    const currentActiveTab = state.activeTabId;
+    
+    for (const tabState of dirtyTabs) {
+        // Switch to the tab to save it
+        if (state.activeTabId !== tabState.id) {
+            await switchToTab(tabState.id);
+        }
+        
+        // Save the file
+        await saveFileFn();
+        
+        // Check if save was successful (tab should no longer be modified)
+        const updatedTabState = state.tabs.get(tabState.id);
+        if (updatedTabState && updatedTabState.modified) {
+            // Save was cancelled or failed
+            return false;
+        }
+    }
+    
+    // Restore the original active tab if it still exists
+    if (currentActiveTab && state.tabs.has(currentActiveTab)) {
+        await switchToTab(currentActiveTab);
+    }
+    
+    return true;
+}
+
 async function requestWindowClose(): Promise<void> {
     const windowCount = await window.teximg.getWindowCount();
     const isLastWindow = windowCount === 1;
@@ -213,10 +254,24 @@ async function requestWindowClose(): Promise<void> {
             return;
         }
 
-        for (const tabState of dirtyTabs) {
-            const response = await window.teximg.showUnsavedChangesDialog(tabState.title);
+        // Show multi-file dialog with all unsaved tabs
+        const filenames = dirtyTabs.map(tab => tab.fullTitle || tab.title || 'Untitled');
+        const response = await window.teximg.showMultipleUnsavedChangesDialog(filenames);
 
-            if (response === 'cancel') {
+        if (response === 'cancel') {
+            return;
+        }
+
+        if (response === 'save') {
+            // Save all dirty tabs
+            const saveSuccess = await saveAllTabs(dirtyTabs, async () => {
+                // We need to use the exported saveFile from TabManager
+                // Get it from the module context
+                const { saveFile } = await import('./TabManager.js');
+                await saveFile();
+            });
+            if (!saveSuccess) {
+                // If any save was cancelled or failed, don't close
                 return;
             }
         }

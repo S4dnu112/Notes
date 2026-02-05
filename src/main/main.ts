@@ -265,6 +265,29 @@ ipcMain.handle('dialog:unsaved-changes', async (event: IpcMainInvokeEvent, filen
     }
 });
 
+// Show multi-file unsaved changes dialog
+ipcMain.handle('dialog:unsaved-changes-multiple', async (event: IpcMainInvokeEvent, filenames: string[]) => {
+    const win = getWindowFromEvent(event);
+    const fileCount = filenames.length;
+    const fileList = filenames.join('\n');
+    
+    const result: MessageBoxReturnValue = await dialog.showMessageBox(win!, {
+        type: 'question',
+        buttons: ['Save All', "Don't Save", 'Cancel'],
+        defaultId: 0,
+        cancelId: 2,
+        title: 'Visual Studio Code',
+        message: `Do you want to save the changes to the following ${fileCount} file${fileCount > 1 ? 's' : ''}?`,
+        detail: `${fileList}\n\nYour changes will be lost if you don't save them.`
+    });
+
+    switch (result.response) {
+        case 0: return 'save';
+        case 1: return 'discard';
+        default: return 'cancel';
+    }
+});
+
 // Get session (previously opened files)
 ipcMain.handle('session:get', () => {
     return getSession();

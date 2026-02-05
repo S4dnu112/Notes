@@ -34,6 +34,7 @@ interface TexImgAPI {
 
     // Dialogs
     showUnsavedChangesDialog: (title: string) => Promise<'save' | 'discard' | 'cancel'>;
+    showMultipleUnsavedChangesDialog: (filenames: string[]) => Promise<'save' | 'discard' | 'cancel'>;
 
     // Tab management
     closeTab: (tabId: string) => Promise<void>;
