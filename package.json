@@ -1,5 +1,5 @@
 {
-  "name": "teximg-editor",
+  "name": "textimg-editor",
   "version": "1.0.0",
   "description": "High-performance text editor for .txti files (zip containers with text and images)",
   "main": "dist/main/main.js",

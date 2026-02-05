@@ -14,10 +14,10 @@ test.describe('Tab Close Dialog E2E', () => {
     let testDir;
 
     test.beforeEach(async () => {
-        testDir = path.join(os.tmpdir(), 'teximg-close-dialog-' + Date.now());
+        testDir = path.join(os.tmpdir(), 'textimg-close-dialog-' + Date.now());
         fs.mkdirSync(testDir, { recursive: true });
 
-        const uniqueUserDataDir = path.join(os.tmpdir(), `teximg-test-dialog-${Date.now()}-${Math.random()}`);
+        const uniqueUserDataDir = path.join(os.tmpdir(), `textimg-test-dialog-${Date.now()}-${Math.random()}`);
         electronApp = await electron.launch({
             args: [path.join(__dirname, '../../dist/main/main.js'), `--user-data-dir=${uniqueUserDataDir}`],
             env: { ...process.env, NODE_ENV: 'test' }

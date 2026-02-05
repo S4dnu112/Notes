@@ -72,7 +72,7 @@ export function initSettings(): void {
 }
 
 export async function loadSettings(): Promise<void> {
-    state.settings = await window.teximg.getSettings();
+    state.settings = await window.textimg.getSettings();
     applySettingsToUI();
     updateLineFeedDisplay();
     applyWordWrap();
@@ -88,7 +88,7 @@ function applySettingsToUI(): void {
 }
 
 export async function saveCurrentSettings(): Promise<void> {
-    await window.teximg.saveSettings(state.settings);
+    await window.textimg.saveSettings(state.settings);
     updateLineFeedDisplay();
     applyWordWrap();
 }

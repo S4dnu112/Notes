@@ -12,7 +12,7 @@ test.describe('Tab Management E2E', () => {
     let window;
 
     test.beforeEach(async () => {
-        const uniqueUserDataDir = path.join(os.tmpdir(), `teximg-test-data-${Date.now()}-${Math.random()}`);
+        const uniqueUserDataDir = path.join(os.tmpdir(), `textimg-test-data-${Date.now()}-${Math.random()}`);
         electronApp = await electron.launch({
             args: [path.join(__dirname, '../../dist/main/main.js'), `--user-data-dir=${uniqueUserDataDir}`]
         });

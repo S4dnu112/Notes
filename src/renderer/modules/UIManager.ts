@@ -25,32 +25,32 @@ export function initUI(tabManagerFuncs: TabManagerFuncs): void {
     const { createTab, openFile, saveFile, saveFileAs, closeTab, switchToNextTab, switchToPreviousTab } = tabManagerFuncs;
 
     // Window controls
-    (document.getElementById('btn-minimize') as HTMLButtonElement).addEventListener('click', () => window.teximg.minimize());
-    (document.getElementById('btn-maximize') as HTMLButtonElement).addEventListener('click', () => window.teximg.maximize());
+    (document.getElementById('btn-minimize') as HTMLButtonElement).addEventListener('click', () => window.textimg.minimize());
+    (document.getElementById('btn-maximize') as HTMLButtonElement).addEventListener('click', () => window.textimg.maximize());
     // Close button now triggers native close (which will fire close-request)
     (document.getElementById('btn-close') as HTMLButtonElement).addEventListener('click', () => requestWindowClose());
 
     // Handle close request from main process
     setupCloseRequestHandler(tabManagerFuncs);
 
-    window.teximg.onMaximizedChange((isMaximized: boolean) => {
+    window.textimg.onMaximizedChange((isMaximized: boolean) => {
         updateMaximizeIcon(isMaximized);
     });
-    window.teximg.isMaximized().then(updateMaximizeIcon);
+    window.textimg.isMaximized().then(updateMaximizeIcon);
 
     // Native menu - triggered by hamburger button
     const menuHamburger = document.getElementById('menu-hamburger') as HTMLButtonElement;
     menuHamburger.addEventListener('click', () => {
-        window.teximg.showMenu();
+        window.textimg.showMenu();
     });
 
     // Handle menu actions from main process
-    window.teximg.onMenuAction((action: string) => {
+    window.textimg.onMenuAction((action: string) => {
         switch (action) {
-            case 'new-window': window.teximg.newWindow(); break;
+            case 'new-window': window.textimg.newWindow(); break;
             case 'save': saveFile(); break;
             case 'save-as': saveFileAs(); break;
-            case 'preferences': window.teximg.openPreferences(); break;
+            case 'preferences': window.textimg.openPreferences(); break;
         }
     });
 
@@ -124,7 +124,7 @@ function setupKeyboardShortcuts({ createTab, openFile, saveFile, saveFileAs, clo
     document.addEventListener('keydown', (e: KeyboardEvent) => {
         if (e.ctrlKey || e.metaKey) {
             switch (e.key.toLowerCase()) {
-                case 'n': e.preventDefault(); window.teximg.newWindow(); break;
+                case 'n': e.preventDefault(); window.textimg.newWindow(); break;
                 case 't': e.preventDefault(); createTab(); break;
                 case 'o': e.preventDefault(); openFile(); break;
                 case 's':
@@ -159,20 +159,20 @@ function setupCloseRequestHandler(funcs: Pick<TabManagerFuncs, 'saveFile'>): voi
     if (closeRequestHandlerSetup) return;
     closeRequestHandlerSetup = true;
 
-    window.teximg.onCloseRequest(async ({ isLastWindow }: { isLastWindow: boolean }) => {
+    window.textimg.onCloseRequest(async ({ isLastWindow }: { isLastWindow: boolean }) => {
         if (isLastWindow) {
-            window.teximg.forceClose();
+            window.textimg.forceClose();
         } else {
             const dirtyTabs = getDirtyTabs();
 
             if (dirtyTabs.length === 0) {
-                window.teximg.forceClose();
+                window.textimg.forceClose();
                 return;
             }
 
             // Show multi-file dialog with all unsaved tabs
             const filenames = dirtyTabs.map(tab => tab.fullTitle || tab.title || 'Untitled');
-            const response = await window.teximg.showMultipleUnsavedChangesDialog(filenames);
+            const response = await window.textimg.showMultipleUnsavedChangesDialog(filenames);
 
             if (response === 'cancel') {
                 return;
@@ -187,7 +187,7 @@ function setupCloseRequestHandler(funcs: Pick<TabManagerFuncs, 'saveFile'>): voi
                 }
             }
 
-            window.teximg.forceClose();
+            window.textimg.forceClose();
         }
     });
 }
@@ -236,22 +236,22 @@ async function saveAllTabs(dirtyTabs: TabState[], saveFileFn: () => Promise<void
 }
 
 async function requestWindowClose(): Promise<void> {
-    const windowCount = await window.teximg.getWindowCount();
+    const windowCount = await window.textimg.getWindowCount();
     const isLastWindow = windowCount === 1;
 
     if (isLastWindow) {
-        window.teximg.forceClose();
+        window.textimg.forceClose();
     } else {
         const dirtyTabs = getDirtyTabs();
 
         if (dirtyTabs.length === 0) {
-            window.teximg.forceClose();
+            window.textimg.forceClose();
             return;
         }
 
         // Show multi-file dialog with all unsaved tabs
         const filenames = dirtyTabs.map(tab => tab.fullTitle || tab.title || 'Untitled');
-        const response = await window.teximg.showMultipleUnsavedChangesDialog(filenames);
+        const response = await window.textimg.showMultipleUnsavedChangesDialog(filenames);
 
         if (response === 'cancel') {
             return;
@@ -271,6 +271,6 @@ async function requestWindowClose(): Promise<void> {
             }
         }
 
-        window.teximg.forceClose();
+        window.textimg.forceClose();
     }
 }

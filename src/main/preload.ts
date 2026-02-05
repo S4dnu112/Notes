@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 // Expose IPC API to renderer process
-contextBridge.exposeInMainWorld('teximg', {
+contextBridge.exposeInMainWorld('textimg', {
     // Window controls
     minimize: () => ipcRenderer.invoke('window:minimize'),
     maximize: () => ipcRenderer.invoke('window:maximize'),

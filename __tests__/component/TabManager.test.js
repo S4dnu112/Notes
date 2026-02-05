@@ -324,7 +324,7 @@ describe('TabManager - Component Tests', () => {
         global.document = document;
         global.window = window;
 
-        // Mock window.teximg API
+        // Mock window.textimg API
         mockTeximg = {
             newFile: jest.fn().mockResolvedValue(undefined),
             closeTab: jest.fn().mockResolvedValue(undefined),
@@ -333,7 +333,7 @@ describe('TabManager - Component Tests', () => {
             saveFileAs: jest.fn().mockResolvedValue(null),
             saveSession: jest.fn().mockResolvedValue(undefined)
         };
-        global.window.teximg = mockTeximg;
+        global.window.textimg = mockTeximg;
 
         // Clear state
         state.tabs.clear();

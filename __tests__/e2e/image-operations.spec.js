@@ -29,10 +29,10 @@ test.describe('Image Operations E2E', () => {
     let testDir;
 
     test.beforeEach(async () => {
-        testDir = path.join(os.tmpdir(), 'teximg-e2e-images-' + Date.now());
+        testDir = path.join(os.tmpdir(), 'textimg-e2e-images-' + Date.now());
         fs.mkdirSync(testDir, { recursive: true });
 
-        const uniqueUserDataDir = path.join(os.tmpdir(), `teximg-test-data-images-${Date.now()}-${Math.random()}`);
+        const uniqueUserDataDir = path.join(os.tmpdir(), `textimg-test-data-images-${Date.now()}-${Math.random()}`);
         electronApp = await electron.launch({
             args: [path.join(__dirname, '../../dist/main/main.js'), `--user-data-dir=${uniqueUserDataDir}`],
             env: { ...process.env, NODE_ENV: 'test' }

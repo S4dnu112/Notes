@@ -59,7 +59,7 @@ export function createTab(filePath: string | null = null, content: Content = [])
     updateTabsVisibility();
 
     // Initialize temp directory in main process
-    window.teximg.newFile(id);
+    window.textimg.newFile(id);
 
     return id;
 }
@@ -73,7 +73,7 @@ export async function closeTab(tabId: string): Promise<void> {
         const displayName = tabState.fullTitle || tabState.title || 'Untitled';
 
         // Show confirmation dialog
-        const response = await window.teximg.showUnsavedChangesDialog(displayName);
+        const response = await window.textimg.showUnsavedChangesDialog(displayName);
 
         if (response === 'cancel') {
             // User cancelled, keep the tab open
@@ -105,7 +105,7 @@ export async function closeTab(tabId: string): Promise<void> {
     }
 
     // Cleanup temp directory
-    await window.teximg.closeTab(tabId);
+    await window.textimg.closeTab(tabId);
 
     // Remove from DOM
     const tabEl = tabsContainer.querySelector(`[data-tab-id="${tabId}"]`);
@@ -159,7 +159,7 @@ export async function switchToTab(tabId: string): Promise<void> {
 
     // Load images if not already loaded (lazy loading)
     if (tabState.filePath && !tabState.imagesLoaded) {
-        const result = await window.teximg.loadImages({ filePath: tabState.filePath, tabId });
+        const result = await window.textimg.loadImages({ filePath: tabState.filePath, tabId });
         if (result.success && result.imageMap) {
             tabState.imageMap = result.imageMap;
             tabState.imagesLoaded = true;
@@ -343,7 +343,7 @@ function reorderTabsDOM(): void {
 export async function openFile(filePath: string | null = null): Promise<void> {
     hideWelcomeScreen();
     if (!filePath) {
-        filePath = await window.teximg.openDialog();
+        filePath = await window.textimg.openDialog();
         if (!filePath) return;
     }
 
@@ -355,7 +355,7 @@ export async function openFile(filePath: string | null = null): Promise<void> {
     }
 
     const tabId = generateTabId();
-    const result = await window.teximg.openFile(filePath, tabId);
+    const result = await window.textimg.openFile(filePath, tabId);
 
     if (!result.success || !result.content) {
         console.error('Failed to open file:', result.error);
@@ -396,13 +396,13 @@ export async function saveFile(): Promise<void> {
         if (defaultName !== 'Untitled.txti' && !defaultName.endsWith('.txti')) {
             defaultName += '.txti';
         }
-        filePath = await window.teximg.saveDialog(defaultName);
+        filePath = await window.textimg.saveDialog(defaultName);
         if (!filePath) return;
     }
 
     saveEditorToState(state.activeTabId);
 
-    const result = await window.teximg.saveFile({
+    const result = await window.textimg.saveFile({
         tabId: state.activeTabId,
         filePath,
         content: tabState.content,
@@ -440,12 +440,12 @@ export async function saveFileAs(): Promise<void> {
             defaultPath += '.txti';
         }
     }
-    const filePath = await window.teximg.saveAsDialog(defaultPath);
+    const filePath = await window.textimg.saveAsDialog(defaultPath);
     if (!filePath) return;
 
     saveEditorToState(state.activeTabId);
 
-    const result = await window.teximg.saveFile({
+    const result = await window.textimg.saveFile({
         tabId: state.activeTabId,
         filePath,
         content: tabState.content,
@@ -488,14 +488,14 @@ async function saveSessionState(): Promise<void> {
         // For unsaved tabs, persist temp images as base64
         if (!tabState.filePath && Object.keys(tabState.tempImages).length > 0) {
             const filenames = Object.keys(tabState.tempImages);
-            const imageData = await window.teximg.readTempImages(tabState.id, filenames);
+            const imageData = await window.textimg.readTempImages(tabState.id, filenames);
             tabData.tempImageData = imageData;
         }
 
         tabs.push(tabData);
     }
 
-    await window.teximg.saveFullSession({
+    await window.textimg.saveFullSession({
         tabs,
         tabOrder: state.tabOrder,
         activeTabId: state.activeTabId
@@ -503,12 +503,12 @@ async function saveSessionState(): Promise<void> {
 }
 
 export async function restoreSession(): Promise<void> {
-    const session = await window.teximg.getFullSession();
+    const session = await window.textimg.getFullSession();
 
     // If no full session, try legacy or create new tab
     if (!session || !session.tabs || session.tabs.length === 0) {
         // Try legacy session (file paths only)
-        const filePaths = await window.teximg.getSession();
+        const filePaths = await window.textimg.getSession();
         if (filePaths.length > 0) {
             for (const filePath of filePaths) {
                 await openFile(filePath);
@@ -538,11 +538,11 @@ export async function restoreSession(): Promise<void> {
         renderTab(tabState);
 
         // Initialize temp directory
-        await window.teximg.newFile(savedTab.id);
+        await window.textimg.newFile(savedTab.id);
 
         // Restore temp images from base64 if present
         if (savedTab.tempImageData && Object.keys(savedTab.tempImageData).length > 0) {
-            const restoredPaths = await window.teximg.restoreTempImages(savedTab.id, savedTab.tempImageData);
+            const restoredPaths = await window.textimg.restoreTempImages(savedTab.id, savedTab.tempImageData);
             tabState.tempImages = restoredPaths;
         }
     }

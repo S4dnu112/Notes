@@ -367,7 +367,7 @@ ipcMain.handle('file:new', (_event: IpcMainInvokeEvent, tabId: string) => {
 ipcMain.handle('file:open-dialog', async (event: IpcMainInvokeEvent) => {
     const win = getWindowFromEvent(event);
     const result = await dialog.showOpenDialog(win!, {
-        filters: [{ name: 'TexImg Files', extensions: ['txti'] }],
+        filters: [{ name: 'TextImg Files', extensions: ['txti'] }],
         properties: ['openFile']
     });
 
@@ -404,7 +404,7 @@ ipcMain.handle('file:load-images', async (_event: IpcMainInvokeEvent, filePath: 
 ipcMain.handle('file:save-dialog', async (event: IpcMainInvokeEvent, defaultName: string) => {
     const win = getWindowFromEvent(event);
     const result = await dialog.showSaveDialog(win!, {
-        filters: [{ name: 'TexImg Files', extensions: ['txti'] }],
+        filters: [{ name: 'TextImg Files', extensions: ['txti'] }],
         defaultPath: defaultName || 'document.txti'
     });
 
@@ -431,7 +431,7 @@ ipcMain.handle('file:save', async (_event: IpcMainInvokeEvent, { filePath, conte
 ipcMain.handle('file:save-as-dialog', async (event: IpcMainInvokeEvent, currentPath: string) => {
     const win = getWindowFromEvent(event);
     const result = await dialog.showSaveDialog(win!, {
-        filters: [{ name: 'TexImg Files', extensions: ['txti'] }],
+        filters: [{ name: 'TextImg Files', extensions: ['txti'] }],
         defaultPath: currentPath || 'document.txti'
     });
 

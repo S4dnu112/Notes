@@ -2,7 +2,7 @@
 
 import { Content, ImageMap, SessionData, TabState, EditorSettings } from '../types/index';
 
-interface TexImgAPI {
+interface TextImgAPI {
     // Window controls
     minimize: () => void;
     maximize: () => void;
@@ -58,7 +58,7 @@ interface TexImgAPI {
 
 declare global {
     interface Window {
-        teximg: TexImgAPI;
+        textimg: TextImgAPI;
     }
 }
 

@@ -1,8 +1,8 @@
-# TexImg Editor - Architecture Documentation
+# TextImg Editor - Architecture Documentation
 
 ## Overview
 
-TexImg Editor is an Electron-based desktop application for editing `.txti` files - text documents with embedded images stored as ZIP archives. The application follows a clean separation of concerns with distinct main, preload, and renderer processes, fully implemented in TypeScript.
+TextImg Editor is an Electron-based desktop application for editing `.txti` files - text documents with embedded images stored as ZIP archives. The application follows a clean separation of concerns with distinct main, preload, and renderer processes, fully implemented in TypeScript.
 
 ## Technology Stack
 
@@ -104,7 +104,7 @@ interface SaveFileParams {
 - Secure IPC channel exposure via Context Bridge
 - Type-safe API between renderer and main
 
-**Exposed API (`window.teximg`):**
+**Exposed API (`window.textimg`):**
 ```typescript
 {
   // Window controls
@@ -312,7 +312,7 @@ Persists open tabs and window state across restarts.
 - `saveFullSession(sessionData)` - Save all tab data
 - `saveTabContent(tabData)` - Incremental tab updates
 
-**Storage:** `~/.config/teximg-editor/session.json`
+**Storage:** `~/.config/textimg-editor/session.json`
 
 #### `settingsManager.ts`
 User preferences persistence.
@@ -333,7 +333,7 @@ User preferences persistence.
 }
 ```
 
-**Storage:** `~/.config/teximg-editor/settings.json`
+**Storage:** `~/.config/textimg-editor/settings.json`
 
 ### Type Definitions (`src/types/index.ts`)
 
@@ -547,7 +547,7 @@ npm run test:watch    # Watch mode
 
 ### Project Structure
 ```
-teximg-editor/
+textimg-editor/
 ├── src/                        # Source files (TypeScript)
 │   ├── main/                   # Main process
 │   │   ├── main.ts            # Entry point
@@ -560,7 +560,7 @@ teximg-editor/
 │   │   ├── index.html
 │   │   ├── style.css
 │   │   ├── renderer.ts
-│   │   ├── global.d.ts        # Window.teximg types
+│   │   ├── global.d.ts        # Window.textimg types
 │   │   └── modules/
 │   │       ├── Editor.ts
 │   │       ├── TabManager.ts
