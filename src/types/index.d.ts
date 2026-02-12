@@ -19,6 +19,7 @@ export interface TabState {
     fullTitle?: string;
     modified: boolean;
     content: Content;
+    savedContent: Content;
     imageMap: ImageMap;
     tempImages: ImageMap;
     imagesLoaded?: boolean;

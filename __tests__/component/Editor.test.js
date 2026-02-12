@@ -42,7 +42,7 @@ describe('Editor - Component Tests', () => {
     let initEditor;
     let renderContentToEditor;
     let saveEditorToState;
-    let markModified;
+    let updateModifiedState;
     let setUpdateTabUI;
     let setUpdateStatusBar;
     let setUpdateHeaderPath;
@@ -71,7 +71,7 @@ describe('Editor - Component Tests', () => {
         initEditor = EditorModule.initEditor;
         renderContentToEditor = EditorModule.renderContentToEditor;
         saveEditorToState = EditorModule.saveEditorToState;
-        markModified = EditorModule.markModified;
+        updateModifiedState = EditorModule.updateModifiedState;
         setUpdateTabUI = EditorModule.setUpdateTabUI;
         setUpdateStatusBar = EditorModule.setUpdateStatusBar;
         setUpdateHeaderPath = EditorModule.setUpdateHeaderPath;
@@ -316,38 +316,72 @@ describe('Editor - Component Tests', () => {
         });
     });
 
-    describe('markModified', () => {
-        test('should mark active tab as modified', () => {
+    describe('updateModifiedState', () => {
+        test('should mark active tab as modified when content differs', () => {
             const tabId = 'tab1';
             const tabState = {
                 id: tabId,
                 modified: false,
                 filePath: '/tmp/test.txt',
-                title: 'test.txt'
+                title: 'test.txt',
+                savedContent: [], // Empty saved content
+                content: []
             };
             state.tabs.set(tabId, tabState);
             state.activeTabId = tabId;
 
-            markModified();
+            // Make content different from savedContent
+            // updateModifiedState calls saveEditorToState internally, which reads from DOM
+            editor.innerHTML = '<p>New Content</p>';
+
+            updateModifiedState();
 
             expect(tabState.modified).toBe(true);
             expect(mockUpdateTabUI).toHaveBeenCalledWith(tabId);
         });
 
-        test('should not call updateTabUI if already modified', () => {
+        test('should not mark as modified when content matches', () => {
             const tabId = 'tab1';
             const tabState = {
                 id: tabId,
-                modified: true,
+                modified: false,
                 filePath: '/tmp/test.txt',
-                title: 'test.txt'
+                title: 'test.txt',
+                savedContent: [{ type: 'text', val: 'Same Content' }],
+                content: []
             };
             state.tabs.set(tabId, tabState);
             state.activeTabId = tabId;
 
-            markModified();
+            // Make content same as savedContent
+            editor.innerHTML = '<p>Same Content</p>';
 
+            updateModifiedState();
+
+            expect(tabState.modified).toBe(false);
             expect(mockUpdateTabUI).not.toHaveBeenCalled();
+        });
+
+        test('should clear modified state when unique content is reverted', () => {
+            const tabId = 'tab1';
+            const tabState = {
+                id: tabId,
+                modified: true, // Currently modified
+                filePath: '/tmp/test.txt',
+                title: 'test.txt',
+                savedContent: [{ type: 'text', val: 'Original' }],
+                content: [{ type: 'text', val: 'Modified' }]
+            };
+            state.tabs.set(tabId, tabState);
+            state.activeTabId = tabId;
+
+            // Revert content to match saved
+            editor.innerHTML = '<p>Original</p>';
+
+            updateModifiedState();
+
+            expect(tabState.modified).toBe(false);
+            expect(mockUpdateTabUI).toHaveBeenCalledWith(tabId);
         });
     });
 });

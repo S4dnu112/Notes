@@ -44,7 +44,7 @@ export function initEditor(): void {
     editor.addEventListener('keydown', handleEditorKeyDown);
 
     editor.addEventListener('input', () => {
-        markModified();
+        updateModifiedState();
         updateStatusBar();
         updateCurrentTabTitle();
         debouncedSaveSession(); // Auto-save 1 second after typing stops
@@ -165,12 +165,22 @@ export function saveEditorToState(tabId: string): void {
     tabState.content = content;
 }
 
-export function markModified(): void {
+export function updateModifiedState(): void {
     const tabState = state.tabs.get(state.activeTabId!);
-    if (tabState && !tabState.modified) {
-        tabState.modified = true;
+    if (!tabState) return;
+
+    // Get current content from editor without overwriting state.content yet
+    // We need a way to get content without side effects or just use saveEditorToState
+    // Using saveEditorToState updates tabState.content, which is what we want to track current state
+    saveEditorToState(state.activeTabId!);
+
+    // Compare content and savedContent
+    const isNowModified = JSON.stringify(tabState.content) !== JSON.stringify(tabState.savedContent);
+
+    if (tabState.modified !== isNowModified) {
+        tabState.modified = isNowModified;
         updateTabUI(state.activeTabId!);
-        updateHeaderPath(formatHeaderText(tabState.filePath, tabState.fullTitle || tabState.title, true));
+        updateHeaderPath(formatHeaderText(tabState.filePath, tabState.fullTitle || tabState.title, isNowModified));
     }
 }
 
@@ -254,7 +264,7 @@ function doResize(e: MouseEvent): void {
 function stopResize(): void {
     if (isResizing) {
         isResizing = false;
-        markModified();
+        updateModifiedState();
     }
     document.removeEventListener('mousemove', doResize);
     document.removeEventListener('mouseup', stopResize);
@@ -348,7 +358,7 @@ async function handleImagePaste(item: DataTransferItem): Promise<void> {
     if (result.success && result.filename && result.filePath) {
         insertImage(result.filename, result.filePath);
         tabState.tempImages[result.filename] = result.filePath;
-        markModified();
+        updateModifiedState();
     }
 }
 
@@ -359,7 +369,7 @@ async function handleNativeImagePaste(buffer: any): Promise<void> {
     if (result.success && result.filename && result.filePath) {
         insertImage(result.filename, result.filePath);
         tabState.tempImages[result.filename] = result.filePath;
-        markModified();
+        updateModifiedState();
     }
 }
 
@@ -399,7 +409,7 @@ function handleEditorKeyDown(e: KeyboardEvent): void {
             selection.addRange(range);
         }
 
-        markModified();
+        updateModifiedState();
         updateStatusBar();
         updateCurrentTabTitle();
         // Scroll to cursor
@@ -422,7 +432,7 @@ function handleEditorKeyDown(e: KeyboardEvent): void {
         range.setEndAfter(textNode);
         selection.removeAllRanges();
         selection.addRange(range);
-        markModified();
+        updateModifiedState();
     }
 }
 

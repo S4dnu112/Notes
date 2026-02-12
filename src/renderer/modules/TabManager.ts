@@ -48,6 +48,7 @@ export function createTab(filePath: string | null = null, content: Content = [])
         modified: false,
         imagesLoaded: false,
         content,
+        savedContent: JSON.parse(JSON.stringify(content)), // Deep copy initial content
         imageMap: {},
         tempImages: {}
     };
@@ -369,6 +370,7 @@ export async function openFile(filePath: string | null = null): Promise<void> {
         modified: false,
         imagesLoaded: false,
         content: result.content,
+        savedContent: JSON.parse(JSON.stringify(result.content)),
         imageMap: {},
         tempImages: {}
     };
@@ -415,6 +417,8 @@ export async function saveFile(): Promise<void> {
         tabState.fullTitle = getFilename(filePath);
         tabState.title = truncateTabTitle(tabState.fullTitle);
         tabState.modified = false;
+        // Update saved content to match current content
+        tabState.savedContent = JSON.parse(JSON.stringify(tabState.content));
 
         Object.assign(tabState.imageMap, tabState.tempImages);
         tabState.tempImages = {};
@@ -458,6 +462,8 @@ export async function saveFileAs(): Promise<void> {
         tabState.fullTitle = getFilename(filePath);
         tabState.title = truncateTabTitle(tabState.fullTitle);
         tabState.modified = false;
+        // Update saved content to match current content
+        tabState.savedContent = JSON.parse(JSON.stringify(tabState.content));
 
         Object.assign(tabState.imageMap, tabState.tempImages);
         tabState.tempImages = {};
@@ -482,7 +488,8 @@ async function saveSessionState(): Promise<void> {
             title: tabState.title,
             fullTitle: tabState.fullTitle,
             modified: tabState.modified,
-            content: tabState.content
+            content: tabState.content,
+            savedContent: tabState.savedContent
         };
 
         // For unsaved tabs, persist temp images as base64
@@ -529,6 +536,7 @@ export async function restoreSession(): Promise<void> {
             modified: savedTab.modified,
             imagesLoaded: false,
             content: savedTab.content || [],
+            savedContent: savedTab.savedContent || (savedTab.content ? JSON.parse(JSON.stringify(savedTab.content)) : []),
             imageMap: {},
             tempImages: {}
         };
