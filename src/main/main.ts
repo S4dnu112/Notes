@@ -185,6 +185,7 @@ ipcMain.handle('menu:show', (event: IpcMainInvokeEvent) => {
 
     const template: Electron.MenuItemConstructorOptions[] = [
         { label: 'New Window', accelerator: 'CmdOrCtrl+N', click: () => win.webContents.send('menu:action', 'new-window') },
+        { label: 'Open', accelerator: 'CmdOrCtrl+O', click: () => win.webContents.send('menu:action', 'open') },
         { type: 'separator' },
         { label: 'Save', accelerator: 'CmdOrCtrl+S', click: () => win.webContents.send('menu:action', 'save') },
         { label: 'Save As', accelerator: 'CmdOrCtrl+Shift+S', click: () => win.webContents.send('menu:action', 'save-as') },
@@ -301,7 +302,7 @@ ipcMain.handle('dialog:unsaved-changes-multiple', async (event: IpcMainInvokeEve
     const win = getWindowFromEvent(event);
     const fileCount = filenames.length;
     const fileList = filenames.join('\n');
-    
+
     const result: MessageBoxReturnValue = await dialog.showMessageBox(win!, {
         type: 'question',
         buttons: ['Save All', "Don't Save", 'Cancel'],
