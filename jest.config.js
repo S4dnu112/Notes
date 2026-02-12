@@ -43,9 +43,24 @@ module.exports = {
                 '**/__tests__/integration/**/*.test.js',
                 '**/__tests__/renderer/**/*.test.js'
             ]
+        },
+        {
+            displayName: 'component',
+            testEnvironment: 'jsdom',
+            testMatch: [
+                '**/__tests__/component/**/*.test.js'
+            ],
+            transform: {
+                '^.+\\.ts$': 'ts-jest',
+                '^.+\\.js$': 'babel-jest'
+            },
+            transformIgnorePatterns: [
+                'node_modules/(?!(jsdom|@exodus|html-encoding-sniffer|whatwg-encoding)/)'
+            ],
+            moduleNameMapper: {
+                '^@exodus/bytes$': '<rootDir>/__mocks__/@exodus/bytes.js',
+                '^(\\.{1,2}/.*)\\.js$': '$1'
+            }
         }
-        // Component tests temporarily disabled due to jsdom ESM dependency issues
-        // The @exodus/bytes module used by html-encoding-sniffer (jsdom dependency)
-        // uses ESM exports which Jest cannot transform in the current setup
     ]
 };

@@ -39,6 +39,7 @@ let resizeStartX = 0;
 let resizeStartWidth = 0;
 
 export function initEditor(): void {
+    editor.removeEventListener('paste', handlePaste); // Prevent duplicates
     editor.addEventListener('paste', handlePaste);
     editor.addEventListener('keydown', handleEditorKeyDown);
 
@@ -287,21 +288,50 @@ export function insertImage(filename: string, filePath: string): void {
 // ============================================
 
 async function handlePaste(e: ClipboardEvent): Promise<void> {
+    e.preventDefault(); // Always prevent default to stop rich text pasting
+
     const clipboardData = e.clipboardData;
-    if (clipboardData && clipboardData.items) {
+    if (!clipboardData) return;
+
+    // 1. Handle Text (if any) - this strips HTML/Rich Text
+    const text = clipboardData.getData('text/plain');
+    if (text) {
+        document.execCommand('insertText', false, text);
+    }
+
+    let handled = false;
+    // 2. Handle Images (if any)
+    if (clipboardData.items) {
         for (const item of clipboardData.items) {
             if (item.type.startsWith('image/')) {
-                e.preventDefault();
                 await handleImagePaste(item);
-                return;
+                handled = true;
+                break; // Stop after first image found
             }
         }
     }
-    const imageBuffer = await window.textimg.readClipboardImage();
-    if (imageBuffer) {
-        e.preventDefault();
-        await handleNativeImagePaste(imageBuffer);
-        return;
+
+    if (handled) return;
+
+    // 3. Native Image Fallback (only if no files were found in items, or maybe just try anyway)
+    // The original logic tried this if no items were found.
+    // Let's try it if we didn't find any images in the loop above?
+    // Actually, the original logic returned after finding ONE image.
+    // Let's stick to the plan: try to find images in clipboard items first.
+    // If we rely on the loop above, we might miss the "buffer" copy from Electron if it's not in items.
+    // But `readClipboardImage` reads from Electron clipboard directly.
+
+    // Check if we already processed an image from items?
+    // The `handleImagePaste` inserts the image.
+
+    // Let's check native clipboard if no images were found in DataTransferItems
+    const hasImagesInItems = Array.from(clipboardData.items).some(item => item.type.startsWith('image/'));
+
+    if (!hasImagesInItems) {
+        const imageBuffer = await (window as any).textimg.readClipboardImage();
+        if (imageBuffer) {
+            await handleNativeImagePaste(imageBuffer);
+        }
     }
 }
 
@@ -313,7 +343,7 @@ async function handleImagePaste(item: DataTransferItem): Promise<void> {
     if (!blob) return;
 
     const buffer = await blob.arrayBuffer();
-    const result = await window.textimg.saveClipboardBuffer(state.activeTabId!, Array.from(new Uint8Array(buffer)) as any);
+    const result = await (window as any).textimg.saveClipboardBuffer(state.activeTabId!, Array.from(new Uint8Array(buffer)) as any);
 
     if (result.success && result.filename && result.filePath) {
         insertImage(result.filename, result.filePath);
@@ -325,7 +355,7 @@ async function handleImagePaste(item: DataTransferItem): Promise<void> {
 async function handleNativeImagePaste(buffer: any): Promise<void> {
     const tabState = state.tabs.get(state.activeTabId!);
     if (!tabState) return;
-    const result = await window.textimg.saveClipboardBuffer(state.activeTabId!, Array.from(buffer) as any);
+    const result = await (window as any).textimg.saveClipboardBuffer(state.activeTabId!, Array.from(buffer) as any);
     if (result.success && result.filename && result.filePath) {
         insertImage(result.filename, result.filePath);
         tabState.tempImages[result.filename] = result.filePath;
@@ -338,6 +368,12 @@ async function handleNativeImagePaste(buffer: any): Promise<void> {
 // ============================================
 
 function handleEditorKeyDown(e: KeyboardEvent): void {
+    // Disable rich text shortcuts
+    if ((e.ctrlKey || e.metaKey) && ['b', 'i', 'u'].includes(e.key.toLowerCase())) {
+        e.preventDefault();
+        return;
+    }
+
     if (e.key === 'Enter' && state.settings.autoIndent) {
         e.preventDefault();
         const selection = window.getSelection();
