@@ -208,6 +208,18 @@ function selectImage(img: HTMLImageElement): void {
     selectedImage = img;
     img.classList.add('selected');
 
+    // Set selection range to the image so backspace/delete works
+    const selection = window.getSelection();
+    if (selection) {
+        const range = document.createRange();
+        range.selectNode(img);
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+
+    // Hide cursor when image is selected
+    editor.classList.add('hide-cursor');
+
     resizeHandle = document.createElement('div');
     resizeHandle.className = 'resize-handle';
     updateHandlePosition();
@@ -224,6 +236,8 @@ export function deselectImage(): void {
         resizeHandle.parentNode.removeChild(resizeHandle);
         resizeHandle = null;
     }
+    // Show cursor again
+    editor.classList.remove('hide-cursor');
 }
 
 function updateHandlePosition(): void {
@@ -377,6 +391,15 @@ async function handleNativeImagePaste(buffer: any): Promise<void> {
 // ============================================
 
 function handleEditorKeyDown(e: KeyboardEvent): void {
+    // Handle backspace/delete for selected images
+    if ((e.key === 'Backspace' || e.key === 'Delete') && selectedImage) {
+        e.preventDefault();
+        selectedImage.remove();
+        deselectImage();
+        updateModifiedState();
+        return;
+    }
+
     // Disable rich text shortcuts
     if ((e.ctrlKey || e.metaKey) && ['b', 'i', 'u'].includes(e.key.toLowerCase())) {
         e.preventDefault();
