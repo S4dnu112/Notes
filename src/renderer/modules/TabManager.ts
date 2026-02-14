@@ -224,6 +224,15 @@ function renderTab(tabState: TabState): void {
         }
     });
 
+    // Support middle-click to close tab (like browsers)
+    // auxclick fires for non-primary mouse buttons (middle, back, forward)
+    tab.addEventListener('auxclick', (e: MouseEvent) => {
+        if (e.button === 1) { // Middle mouse button
+            e.preventDefault();
+            closeTab(tabState.id);
+        }
+    });
+
     (tab.querySelector('.tab-close') as HTMLSpanElement).addEventListener('click', (e: MouseEvent) => {
         e.stopPropagation();
         closeTab(tabState.id);
