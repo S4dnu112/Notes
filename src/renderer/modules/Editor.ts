@@ -79,6 +79,10 @@ export function renderContentToEditor(tabState: TabState): void {
         if (item.type === 'text') {
             const p = document.createElement('p');
             p.textContent = item.val || '';
+            // Add a <br> to empty paragraphs to prevent browser from collapsing them
+            if (!item.val || item.val === '') {
+                p.appendChild(document.createElement('br'));
+            }
             editor.appendChild(p);
         } else if (item.type === 'img') {
             const img = document.createElement('img');
@@ -112,16 +116,10 @@ export function saveEditorToState(tabId: string): void {
 
     for (const child of children) {
         if (child.nodeType === Node.TEXT_NODE) {
-            const text = child.textContent;
-            if (text && text.trim()) {
-                const lines = text.split(/\r?\n/);
-                for (const line of lines) {
-                    if (line.trim()) { // Optional: preserve empty lines? If we want paragraphs, empty lines might be ignored or treated as empty P.
-                        // Standard behavior: text block.
-                        // But verifying the test: it expects >3 Ps.
-                        content.push({ type: 'text', val: line });
-                    }
-                }
+            const text = child.textContent ?? '';
+            const lines = text.split(/\r?\n/);
+            for (const line of lines) {
+                content.push({ type: 'text', val: line });
             }
         } else if (child.nodeType === Node.ELEMENT_NODE) {
             const element = child as HTMLElement;
@@ -136,13 +134,14 @@ export function saveEditorToState(tabId: string): void {
                     content.push(imgItem);
                 }
             } else if (element.tagName === 'DIV' || element.tagName === 'P') {
-                const text = element.textContent;
-                if (text && text.trim()) {
+                const text = element.textContent ?? '';
+                // An empty DIV/P (e.g. containing only <br>) represents a blank line
+                if (text === '' || text.length === 0) {
+                    content.push({ type: 'text', val: '' });
+                } else {
                     const lines = text.split(/\r?\n/);
                     for (const line of lines) {
-                        if (line.trim()) {
-                            content.push({ type: 'text', val: line });
-                        }
+                        content.push({ type: 'text', val: line });
                     }
                 }
                 const imgs = element.querySelectorAll('img');
@@ -157,7 +156,7 @@ export function saveEditorToState(tabId: string): void {
                     }
                 }
             } else if (element.tagName === 'BR') {
-                content.push({ type: 'text', val: '\n' });
+                content.push({ type: 'text', val: '' });
             }
         }
     }
