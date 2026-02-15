@@ -61,6 +61,15 @@ export function initEditor(): void {
     editor.addEventListener('click', handleImageClick);
     (document.getElementById('editor-container') as HTMLDivElement).addEventListener('scroll', updateHandlePosition);
     window.addEventListener('resize', updateHandlePosition);
+
+    // Zoom with Ctrl + Scroll
+    editor.addEventListener('wheel', (e: WheelEvent) => {
+        if (e.ctrlKey) {
+            e.preventDefault();
+            const zoomDelta = e.deltaY > 0 ? -10 : 10;
+            setZoom(state.zoomLevel + zoomDelta);
+        }
+    }, { passive: false });
 }
 
 export function getEditorElement(): HTMLDivElement {
