@@ -526,8 +526,10 @@ body {
 /* Toggle Switch */
 .toggle-switch {
     position: relative;
+    display: inline-block;
     width: 44px;
     height: 24px;
+    flex-shrink: 0;
 }
 
 .toggle-switch input {
@@ -1130,7 +1132,7 @@ body.preferences-window {
 
 .content {
     flex: 1;
-    padding: 50px 40px 80px 40px;
+    padding: 32px 40px 80px 40px;
     overflow-y: auto;
     -webkit-app-region: no-drag;
 }
@@ -1144,34 +1146,38 @@ body.preferences-window {
 }
 
 .preferences-window h1 {
-    font-size: 28px;
+    font-size: 24px;
     font-weight: 600;
-    margin-bottom: 10px;
+    margin-top: 0;
+    margin-bottom: 4px;
     color: #000;
 }
 
 .section-description {
     color: #666;
-    margin-bottom: 30px;
-    font-size: 14px;
+    margin-top: 0;
+    margin-bottom: 24px;
+    font-size: 13px;
 }
 
 .preference-group {
-    margin-bottom: 30px;
+    margin-bottom: 24px;
 }
 
 .preference-group-title {
-    font-size: 16px;
+    font-size: 13px;
     font-weight: 600;
-    margin-bottom: 15px;
-    color: #333;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    color: #888;
 }
 
 .preference-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 0;
+    padding: 10px 0;
     border-bottom: 1px solid #f0f0f0;
 }
 
