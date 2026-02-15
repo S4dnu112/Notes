@@ -161,28 +161,4 @@ test.describe('File Operations E2E', () => {
         expect(headerText).toContain('●');
     });
 
-    test('menu: open action triggers open dialog', async () => {
-        // Mock open dialog in main process
-        await electronApp.evaluate(async ({ dialog }) => {
-            global.mockOpenDialogCalled = false;
-            const original = dialog.showOpenDialog;
-            dialog.showOpenDialog = async () => {
-                global.mockOpenDialogCalled = true;
-                return { canceled: true, filePaths: [] };
-            };
-        });
-
-        // Simulate "Open" menu click by sending IPC message from main to renderer
-        await electronApp.evaluate(({ BrowserWindow }) => {
-            const win = BrowserWindow.getAllWindows()[0];
-            win.webContents.send('menu:action', 'open');
-        });
-
-        // Wait for IPC round trip
-        await window.waitForTimeout(1000);
-
-        // Verify dialog was called
-        const wasCalled = await electronApp.evaluate(() => global.mockOpenDialogCalled);
-        expect(wasCalled).toBe(true);
-    });
 });

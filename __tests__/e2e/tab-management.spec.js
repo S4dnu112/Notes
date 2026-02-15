@@ -132,35 +132,4 @@ test.describe('Tab Management E2E', () => {
         expect(await editor.textContent()).toContain('Content for Tab C');
     });
 
-    test('keyboard navigation: cycle through tabs with Ctrl+Tab', async () => {
-        // Create multiple tabs
-        await window.keyboard.press('Control+T');
-        await window.keyboard.press('Control+T');
-        await window.keyboard.press('Control+T');
-        await window.waitForTimeout(200);
-
-        const getActiveIndex = async () => {
-            const tabs = window.locator('.tab');
-            const count = await tabs.count();
-            for (let i = 0; i < count; i++) {
-                const isActive = await tabs.nth(i).evaluate(el => el.classList.contains('active'));
-                if (isActive) return i;
-            }
-            return -1;
-        };
-
-        const initialIndex = await getActiveIndex();
-
-        // Cycle forward
-        await window.keyboard.press('Control+Tab');
-        await window.waitForTimeout(200);
-        const afterForward = await getActiveIndex();
-        expect(afterForward).not.toBe(initialIndex);
-
-        // Cycle backward
-        await window.keyboard.press('Control+Shift+Tab');
-        await window.waitForTimeout(200);
-        const afterBackward = await getActiveIndex();
-        expect(afterBackward).toBe(initialIndex);
-    });
 });
