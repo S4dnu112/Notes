@@ -26,7 +26,8 @@ export const state: AppStateExtended = {
         indentChar: 'tab',
         tabSize: 8,
         indentSize: 8,
-        wordWrap: true
+        wordWrap: true,
+        defaultImageWidth: 0
     },
     zoomLevel: 100
 };

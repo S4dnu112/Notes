@@ -69,6 +69,11 @@ export function initSettings(): void {
     (document.getElementById('settings-overlay') as HTMLDivElement).addEventListener('click', (e: MouseEvent) => {
         if (e.target === document.getElementById('settings-overlay')) closeSettings();
     });
+
+    // Listen for settings changes from preferences window
+    window.textimg.onSettingsChanged(async () => {
+        await loadSettings();
+    });
 }
 
 export async function loadSettings(): Promise<void> {

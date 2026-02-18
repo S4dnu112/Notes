@@ -297,6 +297,13 @@ export function insertImage(filename: string, filePath: string): void {
     img.src = `file://${filePath}`;
     img.dataset.filename = filename;
 
+    // Apply default image width from settings (0 = use original size)
+    const defaultWidth = state.settings.defaultImageWidth || 0;
+    if (defaultWidth > 0) {
+        img.style.width = `${defaultWidth}px`;
+        img.dataset.width = defaultWidth.toString();
+    }
+
     const selection = window.getSelection();
     if (selection && selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);

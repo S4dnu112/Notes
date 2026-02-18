@@ -58,5 +58,8 @@ contextBridge.exposeInMainWorld('textimg', {
     },
     onCloseRequest: (callback: (data: { isLastWindow: boolean }) => void) => {
         ipcRenderer.on('window:close-request', (_event, data) => callback(data));
+    },
+    onSettingsChanged: (callback: () => void) => {
+        ipcRenderer.on('settings:changed', () => callback());
     }
 });

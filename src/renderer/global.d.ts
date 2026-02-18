@@ -54,6 +54,7 @@ interface TextImgAPI {
     onMaximizedChange: (callback: (isMaximized: boolean) => void) => void;
     onMenuAction: (callback: (action: string) => void) => void;
     onCloseRequest: (callback: (data: { isLastWindow: boolean }) => void) => void;
+    onSettingsChanged: (callback: () => void) => void;
 }
 
 declare global {

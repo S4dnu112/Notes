@@ -106,10 +106,10 @@
                             <div class="preference-description">Line ending format for new files</div>
                         </div>
                         <div class="preference-control">
-                            <select>
-                                <option value="lf" selected>Unix/Linux (LF)</option>
-                                <option value="crlf">Windows (CRLF)</option>
-                                <option value="cr">Classic Mac (CR)</option>
+                            <select id="pref-linefeed">
+                                <option value="LF" selected>Unix/Linux (LF)</option>
+                                <option value="CRLF">Windows (CRLF)</option>
+                                <option value="CR">Classic Mac (CR)</option>
                             </select>
                         </div>
                     </div>
@@ -125,7 +125,7 @@
                         </div>
                         <div class="preference-control">
                             <label class="toggle-switch">
-                                <input type="checkbox" checked>
+                                <input type="checkbox" id="pref-autoindent" checked>
                                 <span class="toggle-slider"></span>
                             </label>
                         </div>
@@ -137,9 +137,9 @@
                             <div class="preference-description">Character used for indentation</div>
                         </div>
                         <div class="preference-control">
-                            <select>
+                            <select id="pref-indentchar">
                                 <option value="tab" selected>Tab</option>
-                                <option value="spaces">Spaces</option>
+                                <option value="space">Spaces</option>
                             </select>
                         </div>
                     </div>
@@ -152,7 +152,7 @@
                         <div class="preference-control">
                             <div class="number-control">
                                 <button class="number-btn" data-action="decrease">−</button>
-                                <input type="number" value="8" min="1" max="16">
+                                <input type="number" id="pref-tabsize" value="8" min="1" max="16">
                                 <button class="number-btn" data-action="increase">+</button>
                             </div>
                         </div>
@@ -166,7 +166,7 @@
                         <div class="preference-control">
                             <div class="number-control">
                                 <button class="number-btn" data-action="decrease">−</button>
-                                <input type="number" value="8" min="1" max="16">
+                                <input type="number" id="pref-indentsize" value="8" min="1" max="16">
                                 <button class="number-btn" data-action="increase">+</button>
                             </div>
                         </div>
@@ -178,25 +178,12 @@
 
                     <div class="preference-item">
                         <div class="preference-label">
-                            <div class="preference-title">Spell Check</div>
-                            <div class="preference-description">Enable spell checking while typing</div>
-                        </div>
-                        <div class="preference-control">
-                            <label class="toggle-switch">
-                                <input type="checkbox" checked>
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="preference-item">
-                        <div class="preference-label">
                             <div class="preference-title">Word Wrap</div>
                             <div class="preference-description">Wrap long lines at the window edge</div>
                         </div>
                         <div class="preference-control">
                             <label class="toggle-switch">
-                                <input type="checkbox" checked>
+                                <input type="checkbox" id="pref-wordwrap" checked>
                                 <span class="toggle-slider"></span>
                             </label>
                         </div>
@@ -208,11 +195,24 @@
 
                     <div class="preference-item">
                         <div class="preference-label">
+                            <div class="preference-title">Use Original Size</div>
+                            <div class="preference-description">Paste images at their native dimensions</div>
+                        </div>
+                        <div class="preference-control">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="pref-imageoriginal">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="preference-item">
+                        <div class="preference-label">
                             <div class="preference-title">Default Image Width</div>
                             <div class="preference-description">Initial width for inserted images (pixels)</div>
                         </div>
                         <div class="preference-control">
-                            <input type="number" value="400" min="50" step="50">
+                            <input type="number" id="pref-imagewidth" value="400" min="50" step="50">
                         </div>
                     </div>
                 </div>
@@ -486,17 +486,19 @@
     <script>
         // Close button
         document.getElementById('btn-close').addEventListener('click', () => {
-            window.close();
+            if (window.prefs) {
+                window.prefs.closeWindow();
+            } else {
+                window.close();
+            }
         });
 
         // Sidebar navigation
         document.querySelectorAll('.sidebar-item').forEach(item => {
             item.addEventListener('click', () => {
-                // Update active sidebar item
                 document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
                 item.classList.add('active');
 
-                // Show corresponding section
                 const sectionId = item.dataset.section;
                 document.querySelectorAll('.preferences-section').forEach(section => {
                     section.classList.remove('active');
@@ -522,16 +524,88 @@
             });
         });
 
+        // Image size checkbox toggle
+        const imageOriginalCheckbox = document.getElementById('pref-imageoriginal');
+        const imageWidthInput = document.getElementById('pref-imagewidth');
+
+        imageOriginalCheckbox.addEventListener('change', () => {
+            if (imageOriginalCheckbox.checked) {
+                imageWidthInput.disabled = true;
+                imageWidthInput.style.opacity = '0.5';
+            } else {
+                imageWidthInput.disabled = false;
+                imageWidthInput.style.opacity = '1';
+            }
+        });
+
+        // --- Settings Load / Save ---
+
+        // Load current settings into form controls
+        async function loadCurrentSettings() {
+            if (!window.prefs) return;
+            try {
+                const settings = await window.prefs.getSettings();
+
+                // Editor section
+                document.getElementById('pref-linefeed').value = settings.lineFeed || 'LF';
+                document.getElementById('pref-autoindent').checked = settings.autoIndent !== false;
+                document.getElementById('pref-indentchar').value = settings.indentChar || 'tab';
+                document.getElementById('pref-tabsize').value = settings.tabSize || 8;
+                document.getElementById('pref-indentsize').value = settings.indentSize || 8;
+                document.getElementById('pref-wordwrap').checked = settings.wordWrap !== false;
+
+                // Image width: if 0, check 'use original' and disable input
+                const useOriginal = !settings.defaultImageWidth || settings.defaultImageWidth === 0;
+                document.getElementById('pref-imageoriginal').checked = useOriginal;
+                document.getElementById('pref-imagewidth').value = settings.defaultImageWidth || 400;
+                document.getElementById('pref-imagewidth').disabled = useOriginal;
+                document.getElementById('pref-imagewidth').style.opacity = useOriginal ? '0.5' : '1';
+            } catch (err) {
+                console.error('Failed to load settings:', err);
+            }
+        }
+
+        // Gather form values and save
+        async function saveCurrentSettings() {
+            if (!window.prefs) return;
+            try {
+                const settings = {
+                    lineFeed: document.getElementById('pref-linefeed').value,
+                    autoIndent: document.getElementById('pref-autoindent').checked,
+                    indentChar: document.getElementById('pref-indentchar').value,
+                    tabSize: parseInt(document.getElementById('pref-tabsize').value) || 8,
+                    indentSize: parseInt(document.getElementById('pref-indentsize').value) || 8,
+                    wordWrap: document.getElementById('pref-wordwrap').checked,
+                    defaultImageWidth: document.getElementById('pref-imageoriginal').checked
+                        ? 0
+                        : (parseInt(document.getElementById('pref-imagewidth').value) || 400)
+                };
+                await window.prefs.saveSettings(settings);
+            } catch (err) {
+                console.error('Failed to save settings:', err);
+            }
+        }
+
+        // Load settings on page load
+        loadCurrentSettings();
+
         // Save button
-        document.getElementById('btn-save').addEventListener('click', () => {
-            // TODO: Implement actual settings save logic
-            console.log('Settings saved');
-            window.close();
+        document.getElementById('btn-save').addEventListener('click', async () => {
+            await saveCurrentSettings();
+            if (window.prefs) {
+                window.prefs.closeWindow();
+            } else {
+                window.close();
+            }
         });
 
         // Cancel button
         document.getElementById('btn-cancel').addEventListener('click', () => {
-            window.close();
+            if (window.prefs) {
+                window.prefs.closeWindow();
+            } else {
+                window.close();
+            }
         });
     </script>
 </body>

@@ -127,7 +127,7 @@ describe('settingsManager', () => {
         test('should accept valid tabSize values', () => {
             const result = saveSettings({ tabSize: 4 });
             expect(result).toBe(true);
-            
+
             const settings = getSettings();
             expect(settings.tabSize).toBe(4);
         });
@@ -165,7 +165,7 @@ describe('settingsManager', () => {
                 wordWrap: false
             };
             expect(saveSettings(validSettings)).toBe(true);
-            
+
             const saved = getSettings();
             expect(saved.tabSize).toBe(4);
             expect(saved.lineFeed).toBe('CRLF');
@@ -178,7 +178,7 @@ describe('settingsManager', () => {
                 anotherBadField: 123
             };
             expect(saveSettings(settings)).toBe(true);
-            
+
             const saved = getSettings();
             // Unknown properties may be saved but won't be in defaults
             expect(saved.tabSize).toBe(4);
@@ -189,7 +189,7 @@ describe('settingsManager', () => {
         test('should handle empty settings object', () => {
             const result = saveSettings({});
             expect(result).toBe(true);
-            
+
             // Empty settings should merge with defaults
             const settings = getSettings();
             expect(settings).toHaveProperty('lineFeed');
@@ -210,6 +210,7 @@ describe('settingsManager', () => {
             expect(DEFAULT_SETTINGS).toHaveProperty('tabSize');
             expect(DEFAULT_SETTINGS).toHaveProperty('indentSize');
             expect(DEFAULT_SETTINGS).toHaveProperty('wordWrap');
+            expect(DEFAULT_SETTINGS).toHaveProperty('defaultImageWidth');
         });
 
         test('should have correct default values', () => {
@@ -219,6 +220,7 @@ describe('settingsManager', () => {
             expect(DEFAULT_SETTINGS.tabSize).toBe(8);
             expect(DEFAULT_SETTINGS.indentSize).toBe(8);
             expect(DEFAULT_SETTINGS.wordWrap).toBe(true);
+            expect(DEFAULT_SETTINGS.defaultImageWidth).toBe(0);
         });
     });
 });

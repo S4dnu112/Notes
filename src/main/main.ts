@@ -249,8 +249,16 @@ ipcMain.handle('window:keyboard-shortcuts', () => {
 });
 
 // Open preferences window
+let preferencesWindow: BrowserWindow | null = null;
+
 ipcMain.handle('window:preferences', () => {
-    const preferencesWindow = new BrowserWindow({
+    // If already open, focus it
+    if (preferencesWindow && !preferencesWindow.isDestroyed()) {
+        preferencesWindow.focus();
+        return;
+    }
+
+    preferencesWindow = new BrowserWindow({
         width: 900,
         height: 650,
         minWidth: 700,
@@ -259,12 +267,16 @@ ipcMain.handle('window:preferences', () => {
         frame: false,
         titleBarStyle: 'hidden',
         webPreferences: {
+            preload: path.join(__dirname, 'preload-preferences.js'),
             nodeIntegration: false,
             contextIsolation: true,
         }
     });
 
     preferencesWindow.loadFile(path.join(__dirname, '../renderer/preferences.html'));
+    preferencesWindow.on('closed', () => {
+        preferencesWindow = null;
+    });
 });
 
 // Get window count
@@ -355,7 +367,18 @@ ipcMain.handle('settings:get', () => {
 
 // Save settings
 ipcMain.handle('settings:save', (_event: IpcMainInvokeEvent, settings: EditorSettings) => {
-    return saveSettings(settings);
+    const result = saveSettings(settings);
+    // Broadcast to all editor windows so they reload settings
+    for (const win of allWindows) {
+        win.webContents.send('settings:changed');
+    }
+    return result;
+});
+
+// Close preferences window
+ipcMain.handle('preferences:close', (event: IpcMainInvokeEvent) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) win.close();
 });
 
 // Create new document

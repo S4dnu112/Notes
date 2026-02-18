@@ -13,7 +13,8 @@ export const DEFAULT_SETTINGS: Omit<EditorSettings, 'windowBounds'> = {
     indentChar: 'tab',
     tabSize: 8,
     indentSize: 8,
-    wordWrap: true
+    wordWrap: true,
+    defaultImageWidth: 0
 };
 
 export function getSettings(): EditorSettings {

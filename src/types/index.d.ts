@@ -53,6 +53,7 @@ export interface EditorSettings {
     tabSize: number;
     indentSize: number;
     wordWrap: boolean;
+    defaultImageWidth: number;
     windowBounds?: {
         width: number;
         height: number;
