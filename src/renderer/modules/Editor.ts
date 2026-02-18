@@ -70,6 +70,13 @@ export function initEditor(): void {
             setZoom(state.zoomLevel + zoomDelta);
         }
     }, { passive: false });
+
+    // Copy selected image to clipboard
+    editor.addEventListener('copy', (e: ClipboardEvent) => {
+        if (!selectedImage) return; // Let default copy handle text selection
+        e.preventDefault();
+        handleImageCopy();
+    });
 }
 
 export function getEditorElement(): HTMLDivElement {
@@ -247,6 +254,21 @@ export function deselectImage(): void {
     }
     // Show cursor again
     editor.classList.remove('hide-cursor');
+}
+
+async function handleImageCopy(): Promise<void> {
+    if (!selectedImage) return;
+    const tabState = state.tabs.get(state.activeTabId!);
+    if (!tabState) return;
+
+    const filename = selectedImage.dataset.filename;
+    if (!filename) return;
+
+    // Resolve the actual file path: tempImages first, then imageMap
+    const filePath = tabState.tempImages[filename] || tabState.imageMap[filename];
+    if (!filePath) return;
+
+    await window.textimg.copyImageToClipboard(filePath);
 }
 
 function updateHandlePosition(): void {

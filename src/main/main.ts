@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, clipboard, Menu, IpcMainInvokeEvent, MessageBoxReturnValue } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, clipboard, nativeImage, Menu, IpcMainInvokeEvent, MessageBoxReturnValue } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -490,6 +490,20 @@ ipcMain.handle('clipboard:read-image', () => {
         return null;
     }
     return image.toPNG();
+});
+
+// Write image file to clipboard
+ipcMain.handle('clipboard:write-image', (_event: IpcMainInvokeEvent, filePath: string) => {
+    try {
+        const image = nativeImage.createFromPath(filePath);
+        if (image.isEmpty()) {
+            return { success: false, error: 'Could not load image from path' };
+        }
+        clipboard.writeImage(image);
+        return { success: true };
+    } catch (err: any) {
+        return { success: false, error: err.message };
+    }
 });
 
 // Save buffer to temp file

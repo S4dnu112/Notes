@@ -47,6 +47,7 @@ interface TextImgAPI {
     readClipboardImage: () => Promise<{ success: boolean; buffer?: Buffer; error?: string }>;
     saveClipboardBuffer: (tabId: string, buffer: Buffer) => Promise<{ success: boolean; filename?: string; filePath?: string; error?: string }>;
     pasteImage: (tabId: string, imageDataUrl: string) => Promise<{ success: boolean; filename?: string; filePath?: string; error?: string }>;
+    copyImageToClipboard: (filePath: string) => Promise<{ success: boolean; error?: string }>;
     createTempDir: (tabId: string) => Promise<string>;
     cleanupTempDir: (tabId: string) => Promise<void>;
 

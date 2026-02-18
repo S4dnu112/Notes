@@ -48,6 +48,7 @@ contextBridge.exposeInMainWorld('textimg', {
     readClipboardImage: () => ipcRenderer.invoke('clipboard:read-image'),
     saveClipboardBuffer: (tabId: string, buffer: Buffer) => ipcRenderer.invoke('clipboard:save-buffer', tabId, buffer),
     pasteImage: (tabId: string, imageDataUrl: string) => ipcRenderer.invoke('clipboard:paste-image', tabId, imageDataUrl),
+    copyImageToClipboard: (filePath: string) => ipcRenderer.invoke('clipboard:write-image', filePath),
 
     // Event listeners
     onMaximizedChange: (callback: (isMaximized: boolean) => void) => {
